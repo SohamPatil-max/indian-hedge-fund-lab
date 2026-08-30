@@ -38,15 +38,32 @@ export const AQRMomentumPage: React.FC = () => {
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        console.error('AQR fetch error:', err);
         setLoading(false);
       });
   }, [params]);
 
-  if (loading || !data) {
+  if (loading && !data) {
     return (
       <div className="flex items-center justify-center h-64 text-emerald-400 font-mono text-sm">
         <span className="animate-spin mr-2">⚙</span> Recalculating AQR-Inspired Momentum Ranks (Lookback: {params.momentum_lookback_months}M, Excl: {params.exclusion_months}M, Top: {params.top_percentile}%)...
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-slate-300 font-mono text-sm space-y-4 bg-[#0D121A] border border-[#27303B] rounded-lg p-6">
+        <span className="text-amber-400 font-bold text-base">⚠️ Backend Stream Connecting...</span>
+        <p className="text-xs text-[#8994A3] text-center max-w-md">
+          The Render backend API container is waking up. Click below to refresh the momentum data feed.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-[#00C896] hover:bg-[#00E6AB] text-[#080B10] font-bold rounded cursor-pointer transition-colors"
+        >
+          🔄 Refresh AQR Momentum Ranks
+        </button>
       </div>
     );
   }

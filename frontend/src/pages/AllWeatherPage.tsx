@@ -16,15 +16,32 @@ export const AllWeatherPage: React.FC = () => {
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        console.error('All-Weather fetch error:', err);
         setLoading(false);
       });
   }, []);
 
-  if (loading || !data) {
+  if (loading && !data) {
     return (
       <div className="flex items-center justify-center h-64 text-amber-400 font-mono text-sm">
         <span className="animate-spin mr-2">⚙</span> Evaluating Indian Macro Regimes & Risk Parity Allocations...
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-slate-300 font-mono text-sm space-y-4 bg-[#0D121A] border border-[#27303B] rounded-lg p-6">
+        <span className="text-amber-400 font-bold text-base">⚠️ Backend Stream Connecting...</span>
+        <p className="text-xs text-[#8994A3] text-center max-w-md">
+          The Render backend API container is waking up. Click below to refresh the macro regime allocations.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-[#3B82F6] hover:bg-[#60A5FA] text-white font-bold rounded cursor-pointer transition-colors"
+        >
+          🔄 Refresh All Weather Allocations
+        </button>
       </div>
     );
   }

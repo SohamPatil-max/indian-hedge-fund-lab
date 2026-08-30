@@ -23,15 +23,32 @@ export const ActivistPage: React.FC = () => {
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        console.error('Activist fetch error:', err);
         setLoading(false);
       });
   }, []);
 
-  if (loading || !data) {
+  if (loading && !data) {
     return (
       <div className="flex items-center justify-center h-64 text-indigo-400 font-mono text-sm">
         <span className="animate-spin mr-2">⚙</span> Running Fundamental Valuation & Corporate Catalyst Scoring Engine...
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-slate-300 font-mono text-sm space-y-4 bg-[#0D121A] border border-[#27303B] rounded-lg p-6">
+        <span className="text-amber-400 font-bold text-base">⚠️ Backend Stream Connecting...</span>
+        <p className="text-xs text-[#8994A3] text-center max-w-md">
+          The Render backend API container is waking up. Click below to refresh the activist candidates feed.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-[#6366F1] hover:bg-[#818CF8] text-white font-bold rounded cursor-pointer transition-colors"
+        >
+          🔄 Refresh Activist Candidates
+        </button>
       </div>
     );
   }
