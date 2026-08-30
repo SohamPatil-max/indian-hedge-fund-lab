@@ -1,0 +1,21 @@
+# Node & Dependencies
+node_modules/
+dist/
+build/
+.cache/
+
+# Python & Virtual Envs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+*.egg-info/
+
+# Environment Variables & OS
+.env
+.env.local
+.DS_Store
+Thumbs.db

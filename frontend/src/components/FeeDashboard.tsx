@@ -1,0 +1,124 @@
+import React from 'react';
+import { FeeBreakdown } from '../types';
+import { DollarSign, ShieldAlert, Award, TrendingUp, Info } from 'lucide-react';
+
+interface Props {
+  fees?: FeeBreakdown;
+  grossReturnPct?: number;
+  netReturnPct?: number;
+  isNetView: boolean;
+  setIsNetView: (val: boolean) => void;
+}
+
+export const FeeDashboard: React.FC<Props> = ({
+  fees,
+  grossReturnPct = 0.0,
+  netReturnPct = 0.0,
+  isNetView,
+  setIsNetView,
+}) => {
+  const defaultFees: FeeBreakdown = {
+    management_fee_pct: 2.0,
+    performance_fee_pct: 20.0,
+    annual_mgmt_fee_est: 2400000.0,
+    monthly_mgmt_fee_est: 200000.0,
+    cumulative_mgmt_fees_inr: 1040000.0,
+    cumulative_perf_fees_inr: 3040000.0,
+    total_fees_paid_inr: 4080000.0,
+    high_water_mark_inr: 12000000.0,
+  };
+
+  const feeData = fees || defaultFees;
+  const isHwmBreached = feeData.cumulative_perf_fees_inr > 0;
+
+  return (
+    <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-5 text-[#E8EDF3] font-mono text-xs shadow-md space-y-4">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#27303B] pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 bg-[#111823] border border-[#27303B] rounded">
+            <DollarSign className="w-4 h-4 text-[#00C896]" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-[#E8EDF3] tracking-wide flex items-center gap-2">
+              <span>HEDGE FUND FEE STRUCTURE — 2/20 MODEL</span>
+              <span className="bg-[#111823] border border-[#27303B] text-[#00C896] text-[10px] px-2 py-0.5 rounded font-bold">
+                HIGH-WATER MARK ENFORCED
+              </span>
+            </h3>
+            <p className="text-[11px] text-[#8994A3] font-sans">
+              2.0% Annual Management Fee on AUM + 20.0% Performance Fee on Net New Profits
+            </p>
+          </div>
+        </div>
+
+        {/* View Toggle: Gross vs Net Investor Performance */}
+        <div className="flex items-center bg-[#080B10] border border-[#27303B] rounded p-0.5 font-mono text-xs">
+          <button
+            onClick={() => setIsNetView(false)}
+            className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+              !isNetView ? 'bg-[#007A5E] text-white font-bold' : 'text-[#8994A3] hover:text-[#E8EDF3]'
+            }`}
+          >
+            GROSS PORTFOLIO
+          </button>
+          <button
+            onClick={() => setIsNetView(true)}
+            className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
+              isNetView ? 'bg-[#151D28] border border-[#364150] text-[#00C896] font-bold' : 'text-[#8994A3] hover:text-[#E8EDF3]'
+            }`}
+          >
+            NET INVESTOR (AFTER 2/20)
+          </button>
+        </div>
+      </div>
+
+      {/* Metric Cards Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Management Fee Card */}
+        <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
+          <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">MANAGEMENT FEE (2% P.A.)</span>
+          <div className="text-[#E8EDF3] font-bold text-lg font-mono-num mt-1">
+            ₹{feeData.monthly_mgmt_fee_est.toLocaleString('en-IN')} <span className="text-xs text-[#5F6B79] font-normal">/ mo</span>
+          </div>
+          <span className="text-[11px] text-[#5F6B79] block mt-1">
+            Annual: ₹{feeData.annual_mgmt_fee_est.toLocaleString('en-IN')}
+          </span>
+        </div>
+
+        {/* Performance Fee Card */}
+        <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
+          <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">PERFORMANCE FEE (20% PROFIT)</span>
+          <div className="text-[#00C896] font-bold text-lg font-mono-num mt-1">
+            20.0% <span className="text-xs text-[#8994A3] font-normal">above HWM</span>
+          </div>
+          <span className="text-[11px] text-[#5F6B79] block mt-1">
+            Cum Perf Fees: ₹{(feeData.cumulative_perf_fees_inr / 10000000).toFixed(2)} Cr
+          </span>
+        </div>
+
+        {/* High-Water Mark Card */}
+        <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
+          <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">HIGH-WATER MARK (HWM)</span>
+          <div className="text-[#D9A441] font-bold text-lg font-mono-num mt-1">
+            ₹{(feeData.high_water_mark_inr / 10000000).toFixed(2)} Cr
+          </div>
+          <span className="text-[11px] text-[#5F6B79] block mt-1">
+            {isHwmBreached ? 'HWM Breached — Fee Eligible' : 'Below Peak — 0 Fee Charged'}
+          </span>
+        </div>
+
+        {/* Cumulative Total Fees Paid */}
+        <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
+          <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">TOTAL FEES CHARGED</span>
+          <div className="text-[#FF5C6C] font-bold text-lg font-mono-num mt-1">
+            ₹{(feeData.total_fees_paid_inr / 10000000).toFixed(2)} Cr
+          </div>
+          <span className="text-[11px] text-[#5F6B79] block mt-1">
+            Impact: {(grossReturnPct - netReturnPct).toFixed(2)}% Return Difference
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-main: #080B10;
+    --surface-main: #0D121A;
+    --surface-secondary: #111823;
+    --surface-hover: #151D28;
+    --border-subtle: #1F2937;
+    --border-strong: #27303B;
+    
+    --text-primary: #E8EDF3;
+    --text-secondary: #8994A3;
+    --text-muted: #5F6B79;
+
+    --accent-emerald: #00C896;
+    --accent-negative: #FF5C6C;
+    --accent-warning: #F0B44D;
+    
+    --strat-aqr: #00C896;
+    --strat-weather: #D9A441;
+    --strat-activist: #7185FF;
+    --strat-cash: #475569;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Monospace Strictly for Numbers, Stock Symbols, Percentages, and Financial Values */
+  .font-mono-num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Custom Terminal Scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #080B10;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #27303B;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #364150;
+  }
+}
+
+/* Institutional Table Row Styles */
+.terminal-table-row {
+  transition: background-color 0.1s ease;
+}
+.terminal-table-row:hover {
+  background-color: #151D28;
+}
+
+/* Active Top Navigation Highlight */
+.nav-item-active {
+  background-color: rgba(0, 200, 150, 0.08);
+  border: 1px solid rgba(0, 200, 150, 0.45);
+  color: #00C896;
+}
+
+/* Institutional Input Styling */
+.terminal-input {
+  background-color: #0B1017;
+  border: 1px solid #2A3441;
+  color: #E8EDF3;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  height: 2rem;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.terminal-input:hover {
+  background-color: #111823;
+}
+.terminal-input:focus {
+  border-color: #00C896;
+  outline: none;
+}
+
+/* Primary Button Styling */
+.btn-primary {
+  background-color: #007A5E;
+  color: #FFFFFF;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+.btn-primary:hover {
+  background-color: #009B77;
+}
+
+/* Secondary Button Styling */
+.btn-secondary {
+  background-color: #151D28;
+  border: 1px solid #27303B;
+  color: #E8EDF3;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-secondary:hover {
+  background-color: #1E2836;
+  border-color: #364150;
+}
+
+/* Allocation Error Banner */
+.error-banner {
+  background-color: rgba(255, 92, 108, 0.12);
+  border: 1px solid rgba(255, 92, 108, 0.35);
+  color: #FF5C6C;
+}
+
+/* Layout Surface Classes */
+.bg-main { background-color: var(--bg-main); }
+.bg-surface-main { background-color: var(--surface-main); }
+.bg-surface-secondary { background-color: var(--surface-secondary); }
+.border-subtle { border-color: var(--border-subtle); }
+.border-strong { border-color: var(--border-strong); }
