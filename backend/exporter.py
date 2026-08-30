@@ -201,7 +201,7 @@ class TradeExporterEngine:
 
             data.append({
                 "Trade ID": t.get("trade_id", "TRD-EXEC"),
-                "Strategy": t.get("strategy", "AQR Momentum"),
+                "Strategy": t.get("strategy", "AQR-inspired Momentum"),
                 "Symbol": t.get("symbol", "").replace(".NS", ""),
                 "Company": t.get("company_name", t.get("symbol")),
                 "Sector": t.get("sector", "Diversified Equity"),
@@ -218,7 +218,8 @@ class TradeExporterEngine:
                 "Performance Fee": t.get("performance_fee_inr", 0.0),
                 "Net P&L": pnl,
                 "Return %": ret_pct,
-                "Status": "CLOSED" if t.get("action") == "SELL" else "OPEN"
+                "Status": "CLOSED" if t.get("action") == "SELL" else "OPEN",
+                "Data Status": t.get("data_status", "REAL_HISTORICAL")
             })
         return pd.DataFrame(data)
 

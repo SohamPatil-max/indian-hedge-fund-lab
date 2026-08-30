@@ -364,9 +364,10 @@ class MarketDataEngine:
                 "prev_close": prev_close,
                 "volume": vol,
                 "market_cap_cr": mcap,
-                "pe_ratio": round(22.5 + (hash(sym) % 15), 1),
-                "pb_ratio": round(3.1 + (hash(hash(sym)) % 4), 2),
-                "roe_pct": round(14.2 + (hash(sym) % 12), 1),
+                "pe_ratio": None,
+                "pb_ratio": None,
+                "roe_pct": None,
+                "data_status": "REAL_HISTORICAL",
                 "quote_type": "LAST_CLOSE",
                 "session_date": last_session_date,
                 "timestamp": f"{last_session_date} 15:30:00 IST",
@@ -518,30 +519,45 @@ class MarketDataEngine:
         
         try:
             batch_size = 25
-            dfs = []
+            price_dfs = []
+            volume_dfs = []
             for i in range(0, len(tickers_to_download), batch_size):
                 chunk = tickers_to_download[i:i+batch_size]
                 raw = yf.download(chunk, start=start_date, end=end_date, progress=False)
                 if isinstance(raw.columns, pd.MultiIndex):
                     if "Adj Close" in raw.columns.levels[0]:
-                        sub_df = raw["Adj Close"]
+                        p_sub = raw["Adj Close"]
                     elif "Close" in raw.columns.levels[0]:
-                        sub_df = raw["Close"]
+                        p_sub = raw["Close"]
                     else:
-                        sub_df = raw.iloc[:, :len(chunk)]
+                        p_sub = raw.iloc[:, :len(chunk)]
+
+                    if "Volume" in raw.columns.levels[0]:
+                        v_sub = raw["Volume"]
+                    else:
+                        v_sub = p_sub * 0 + 500000
                 else:
-                    sub_df = raw["Close"] if "Close" in raw else raw
-                    
-                if isinstance(sub_df, pd.Series):
-                    sub_df = sub_df.to_frame()
-                dfs.append(sub_df)
-                
-            clean_df = pd.concat(dfs, axis=1)
+                    p_sub = raw["Close"] if "Close" in raw else raw
+                    v_sub = raw["Volume"] if "Volume" in raw else p_sub * 0 + 500000
+
+                if isinstance(p_sub, pd.Series):
+                    p_sub = p_sub.to_frame()
+                if isinstance(v_sub, pd.Series):
+                    v_sub = v_sub.to_frame()
+
+                price_dfs.append(p_sub)
+                volume_dfs.append(v_sub)
+
+            clean_df = pd.concat(price_dfs, axis=1)
             clean_df = clean_df.loc[:, ~clean_df.columns.duplicated()].ffill().bfill()
-            
+
+            vol_df = pd.concat(volume_dfs, axis=1)
+            vol_df = vol_df.loc[:, ~vol_df.columns.duplicated()].ffill().bfill()
+
             # Resample to Monthly End (ME) sessions for rebalance steps
             monthly_df = clean_df.resample("ME").last().ffill().bfill()
-            
+            monthly_vol_df = vol_df.resample("ME").mean().ffill().bfill()
+
             n_steps = len(monthly_df)
 
             # Dedicated Real NIFTY 50 Benchmark Download (^NSEI)
@@ -552,7 +568,7 @@ class MarketDataEngine:
                         nifty_px = nifty_raw["Adj Close"]["^NSEI"] if ("Adj Close" in nifty_raw.columns.levels[0] and "^NSEI" in nifty_raw["Adj Close"].columns) else nifty_raw["Close"]["^NSEI"]
                     else:
                         nifty_px = nifty_raw["Adj Close"] if "Adj Close" in nifty_raw else nifty_raw["Close"]
-                    
+
                     nifty_monthly = nifty_px.resample("ME").last().ffill().bfill()
                     nifty_vals = [float(v) for v in nifty_monthly.values]
                     nifty_returns = [(nifty_vals[idx] / nifty_vals[idx-1]) - 1.0 if idx > 0 else 0.0 for idx in range(len(nifty_vals))]
@@ -601,32 +617,37 @@ class MarketDataEngine:
             except Exception:
                 cash_returns = [0.0054 for _ in range(n_steps)]
 
-            # Extract Individual Stock Price & Return Matrices
+            # Extract Individual Stock Price, Volume & Return Matrices
             stock_price_matrix: typing.Dict[str, typing.List[float]] = {}
+            stock_volume_matrix: typing.Dict[str, typing.List[float]] = {}
             stock_return_matrix: typing.Dict[str, typing.List[float]] = {}
-            
+
             for stock_item in INDIAN_STOCK_UNIVERSE:
                 sym = stock_item["symbol"]
                 actual_col = clean_symbol_map.get(sym, sym)
-                
+
                 target_key = None
                 if actual_col in monthly_df.columns and not monthly_df[actual_col].isna().all():
                     target_key = actual_col
                 elif sym in monthly_df.columns and not monthly_df[sym].isna().all():
                     target_key = sym
-                    
+
                 if target_key:
                     prices = [round(float(p), 2) for p in monthly_df[target_key].values]
                     returns = [(prices[i] / (prices[i-1] or 1.0)) - 1.0 if i > 0 else 0.0 for i in range(n_steps)]
+                    vols = [round(float(v), 0) for v in (monthly_vol_df[target_key].values if target_key in monthly_vol_df.columns else [500000]*n_steps)]
+                    
                     stock_price_matrix[sym] = prices
                     stock_price_matrix[actual_col] = prices
+                    stock_volume_matrix[sym] = vols
+                    stock_volume_matrix[actual_col] = vols
                     stock_return_matrix[sym] = returns
                     stock_return_matrix[actual_col] = returns
                 else:
                     logger.warning(f"Ticker {sym} missing from yfinance download dataframe. EXCLUDED from historical P&L universe.")
 
             date_labels = [dt.strftime("%Y-%m-%d") for dt in monthly_df.index]
-            
+
             res = {
                 "success": True,
                 "provider": "Yahoo Finance (yfinance API)",
@@ -639,8 +660,11 @@ class MarketDataEngine:
                 "gsec_returns": gsec_returns,
                 "cash_returns": cash_returns,
                 "stock_price_matrix": stock_price_matrix,
+                "stock_volume_matrix": stock_volume_matrix,
                 "stock_return_matrix": stock_return_matrix
             }
+            self._price_matrix_cache[cache_key] = res
+            return res
             self._price_matrix_cache[cache_key] = res
             return res
         except Exception as e:

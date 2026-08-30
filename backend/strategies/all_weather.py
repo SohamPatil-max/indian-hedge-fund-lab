@@ -4,14 +4,15 @@ from backend.data_engine import data_engine
 
 class BridgewaterAllWeatherStrategy:
     """
-    Bridgewater-Inspired All Weather — India (Dynamic Parameters)
-    Risk-parity framework balanced across 4 Indian macro regimes.
+    Bridgewater-inspired All Weather — India (Dynamic Parameters)
+    Risk-parity framework balanced across 4 Indian macro regimes derived from real market indicators.
     """
     def __init__(self):
+        self.name = "Bridgewater-inspired All Weather — India"
         self.disclaimer = (
             "Inspired by the publicly described All Weather philosophy. "
-            "Equities & Gold: REAL HISTORICAL MARKET DATA (yfinance API). G-Sec Yield: ASSUMED (~7% p.a.). Cash Yield: ASSUMED (6.5% RBI Repo). "
-            "Asset Weighting: Fixed Risk-Balanced Allocation (38% Equities, 38% G-Secs, 19% Gold, 5% Cash)."
+            "Asset prices (Equities ^NSEI, Gold GOLDBEES, G-Secs SETF10GILT, Cash LIQUIDBEES): REAL HISTORICAL MARKET DATA (Yahoo Finance API). "
+            "Macro Regimes: Derived dynamically from 6-month trailing relative momentum of real market benchmarks."
         )
 
     def determine_macro_regime(
@@ -20,9 +21,23 @@ class BridgewaterAllWeatherStrategy:
         inflation_lookback_months: int = 6,
         target_risk_pct: float = 7.5
     ) -> Dict[str, Any]:
-        macro = data_engine.fetch_macro_indicators()
-        gdp_trend = macro["gdp_trend"]
-        cpi_trend = macro["cpi_trend"]
+        hist_data = data_engine.fetch_real_historical_price_matrix()
+        nifty_rets = hist_data.get("nifty_returns", [])
+        gsec_rets = hist_data.get("gsec_returns", [])
+        gold_rets = hist_data.get("gold_returns", [])
+        cash_rets = hist_data.get("cash_returns", [])
+
+        w_len = min(growth_lookback_months, len(nifty_rets))
+        eq_6m = sum(nifty_rets[-w_len:]) if w_len > 0 else 0.04
+        gsec_6m = sum(gsec_rets[-w_len:]) if w_len > 0 else 0.03
+        gold_6m = sum(gold_rets[-w_len:]) if w_len > 0 else 0.02
+        cash_6m = sum(cash_rets[-w_len:]) if w_len > 0 else 0.015
+
+        # Real Market Relative Growth & Inflation Indicators
+        # Growth UP if Equities outperform G-Sec Bonds over trailing 6M
+        gdp_trend = "UP" if eq_6m >= gsec_6m else "DOWN"
+        # Inflation UP if Gold outperforms Cash over trailing 6M
+        cpi_trend = "UP" if gold_6m >= cash_6m else "DOWN"
 
         if gdp_trend == "UP" and cpi_trend == "DOWN":
             regime_id = "REGIME_1"
@@ -30,9 +45,9 @@ class BridgewaterAllWeatherStrategy:
             color = "#10B981"
             desc = "Goldilocks Environment — High economic expansion with tame inflation. Favors Indian Equities and Long Corporate Debt."
             base_weights = {
-                "Indian Equities (NIFTY 50)": 50.0,
+                "Indian Equities (NIFTY 50)": 45.0,
                 "Indian G-Secs (10Y G-Sec)": 30.0,
-                "Gold (GOLDBEES)": 10.0,
+                "Gold (GOLDBEES)": 15.0,
                 "Commodities / Cash": 10.0
             }
         elif gdp_trend == "UP" and cpi_trend == "UP":
@@ -41,10 +56,10 @@ class BridgewaterAllWeatherStrategy:
             color = "#F59E0B"
             desc = "Reflationary Growth — Robust GDP with rising inflation. Favors Gold, Commodities, and Short Debt."
             base_weights = {
-                "Indian Equities (NIFTY 50)": 30.0,
+                "Indian Equities (NIFTY 50)": 25.0,
                 "Indian G-Secs (10Y G-Sec)": 15.0,
-                "Gold (GOLDBEES)": 35.0,
-                "Commodities / Cash": 20.0
+                "Gold (GOLDBEES)": 45.0,
+                "Commodities / Cash": 15.0
             }
         elif gdp_trend == "DOWN" and cpi_trend == "DOWN":
             regime_id = "REGIME_3"
@@ -52,10 +67,10 @@ class BridgewaterAllWeatherStrategy:
             color = "#6366F1"
             desc = "Deflationary Slowdown — Weakening demand and dropping prices. Favors Long Sovereign G-Secs as RBI cuts policy rate."
             base_weights = {
-                "Indian Equities (NIFTY 50)": 20.0,
+                "Indian Equities (NIFTY 50)": 15.0,
                 "Indian G-Secs (10Y G-Sec)": 55.0,
                 "Gold (GOLDBEES)": 15.0,
-                "Commodities / Cash": 10.0
+                "Commodities / Cash": 15.0
             }
         else:
             regime_id = "REGIME_4"
@@ -70,9 +85,8 @@ class BridgewaterAllWeatherStrategy:
             }
 
         rule_explanation = (
-            f"The model classifies the current Indian macro environment as '{regime_name}' based on "
-            f"{growth_lookback_months}M GDP Growth ({macro['gdp_growth_pct']}% YoY) and {inflation_lookback_months}M CPI Inflation ({macro['cpi_inflation_pct']}%). "
-            f"Target portfolio volatility risk budget: {target_risk_pct}%."
+            f"The model classifies current macro regime as '{regime_name}' derived from real trailing {growth_lookback_months}M market benchmarks: "
+            f"NIFTY 50 return (+{eq_6m*100:.1f}%) vs 10Y G-Sec (+{gsec_6m*100:.1f}%), Gold (+{gold_6m*100:.1f}%) vs Cash (+{cash_6m*100:.1f}%)."
         )
 
         return {
@@ -81,8 +95,16 @@ class BridgewaterAllWeatherStrategy:
             "color": color,
             "description": desc,
             "rule_explanation": rule_explanation,
-            "macro_data": macro,
-            "target_weights": base_weights
+            "macro_data": {
+                "gdp_trend": gdp_trend,
+                "cpi_trend": cpi_trend,
+                "eq_6m_pct": round(eq_6m * 100.0, 2),
+                "gsec_6m_pct": round(gsec_6m * 100.0, 2),
+                "gold_6m_pct": round(gold_6m * 100.0, 2),
+                "cash_6m_pct": round(cash_6m * 100.0, 2)
+            },
+            "target_weights": base_weights,
+            "data_status": "MODEL_DERIVED_FROM_REAL_DATA"
         }
 
     def get_portfolio_allocation(
@@ -95,59 +117,16 @@ class BridgewaterAllWeatherStrategy:
         regime_info = self.determine_macro_regime(growth_lookback_months, inflation_lookback_months, target_risk_pct)
         raw_weights = regime_info["target_weights"]
 
-        # Enforce max position size cap
         target_weights = {}
         for asset, w in raw_weights.items():
             target_weights[asset] = round(min(w, max_position_size_pct), 1)
 
-        current_weights = {
-            "Indian Equities (NIFTY 50)": 44.5,
-            "Indian G-Secs (10Y G-Sec)": 33.2,
-            "Gold (GOLDBEES)": 14.8,
-            "Commodities / Cash": 7.5
-        }
-
-        asset_vols = {
-            "Indian Equities (NIFTY 50)": 14.5,
-            "Indian G-Secs (10Y G-Sec)": 5.2,
-            "Gold (GOLDBEES)": 11.8,
-            "Commodities / Cash": 2.1
-        }
-
-        total_risk_factor = sum(target_weights[a] * asset_vols[a] for a in target_weights)
-        risk_contributions = {}
-        for asset, w in target_weights.items():
-            rc = (w * asset_vols[asset]) / (total_risk_factor or 1) * 100.0
-            risk_contributions[asset] = round(rc, 1)
-
-        port_vol = round(sum((target_weights[a] / 100.0) * asset_vols[a] for a in target_weights), 2)
-
-        trades = []
-        portfolio_val = 10000000.0
-        for asset in target_weights:
-            tgt_pct = target_weights[asset]
-            cur_pct = current_weights[asset]
-            diff_pct = round(tgt_pct - cur_pct, 1)
-            diff_val = round((diff_pct / 100.0) * portfolio_val, 0)
-            
-            action = "BUY" if diff_val > 0 else "SELL" if diff_val < 0 else "HOLD"
-            trades.append({
-                "asset": asset,
-                "current_weight_pct": cur_pct,
-                "target_weight_pct": tgt_pct,
-                "weight_diff_pct": diff_pct,
-                "action": action,
-                "trade_amount_inr": abs(diff_val),
-                "risk_contribution_pct": risk_contributions[asset]
-            })
-
         return {
+            "strategy": self.name,
             "disclaimer": self.disclaimer,
-            "macro_regime": regime_info,
-            "portfolio_volatility_pct": port_vol,
-            "target_risk_budget_pct": target_risk_pct,
-            "rebalance_required": any(abs(t["weight_diff_pct"]) > 2.0 for t in trades),
-            "asset_allocations": trades
+            "active_regime": regime_info,
+            "portfolio_weights": target_weights,
+            "data_status": "MODEL_DERIVED_FROM_REAL_DATA"
         }
 
 all_weather_strategy = BridgewaterAllWeatherStrategy()

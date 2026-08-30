@@ -222,6 +222,7 @@ class QuantitativeBacktester:
                 tot_mkt_cap = sum(x[1]["cap"] for x in active_selected_tuple)
                 
                 # AQR-Inspired Inverse-Volatility Risk Weighting (W_i ∝ 1 / σ_i)
+                stock_volume_matrix = hist_data.get("stock_volume_matrix", {})
                 lookback_w = max(3, min(i, 12))
                 vol_weights = []
                 adtv_caps = []
@@ -234,10 +235,10 @@ class QuantitativeBacktester:
                     inv_vol = 1.0 / (s_vol or 0.06)
                     vol_weights.append(inv_vol)
                     
-                    # ADTV Liquidity Capacity Constraint: 5% of 30-day Average Daily Trading Volume
-                    daily_vol = s_ref.get("volume", 500000)
-                    px = s_ref.get("price", 500.0)
-                    adtv_inr = daily_vol * px
+                    # Point-in-time ADTV Capacity Constraint: 5% of historical 30-day Average Daily Trading Volume
+                    hist_vol = stock_volume_matrix[s_sym][i] if (s_sym in stock_volume_matrix and len(stock_volume_matrix[s_sym]) > i) else 500000
+                    hist_px = stock_price_matrix[s_sym][i] if (s_sym in stock_price_matrix and len(stock_price_matrix[s_sym]) > i) else 500.0
+                    adtv_inr = hist_vol * hist_px
                     max_exec_pos_pct = min(max_position_size_pct / 100.0, (adtv_inr * 0.05) / (gross_val or 1.0))
                     adtv_caps.append(max_exec_pos_pct)
 
@@ -260,7 +261,26 @@ class QuantitativeBacktester:
                 gold_ret = gold_returns[i]
                 cash_ret = cash_returns[i]
 
-                # Dynamic Historical Volatility Risk Parity (W_i ∝ 1 / σ_i from trailing real returns)
+                # Dynamic Macro Indicator Regime Classification (Real trailing market trends)
+                w_len = min(6, i)
+                eq_6m = sum(nifty_returns[max(0, i - w_len):i]) if i > 0 else 0.04
+                gsec_6m = sum(gsec_returns[max(0, i - w_len):i]) if i > 0 else 0.03
+                gold_6m = sum(gold_returns[max(0, i - w_len):i]) if i > 0 else 0.02
+                cash_6m = sum(cash_returns[max(0, i - w_len):i]) if i > 0 else 0.015
+
+                gdp_trend = "UP" if eq_6m >= gsec_6m else "DOWN"
+                cpi_trend = "UP" if gold_6m >= cash_6m else "DOWN"
+
+                if gdp_trend == "UP" and cpi_trend == "DOWN":
+                    base_eq, base_gsec, base_gold, base_cash = 0.45, 0.30, 0.15, 0.10
+                elif gdp_trend == "UP" and cpi_trend == "UP":
+                    base_eq, base_gsec, base_gold, base_cash = 0.25, 0.15, 0.45, 0.15
+                elif gdp_trend == "DOWN" and cpi_trend == "DOWN":
+                    base_eq, base_gsec, base_gold, base_cash = 0.15, 0.55, 0.15, 0.15
+                else:
+                    base_eq, base_gsec, base_gold, base_cash = 0.15, 0.15, 0.45, 0.25
+
+                # Risk Parity Inverse Volatility Sizing around regime base weights
                 lookback_w = max(3, min(i, 12))
                 hist_eq = nifty_returns[max(0, i - lookback_w):i] if i > 0 else [0.03]
                 hist_gsec = gsec_returns[max(0, i - lookback_w):i] if i > 0 else [0.01]
@@ -272,10 +292,10 @@ class QuantitativeBacktester:
                 v_gold = float(np.std(hist_gold)) if len(hist_gold) > 1 else 0.030
                 v_cash = float(np.std(hist_cash)) if len(hist_cash) > 1 else 0.005
 
-                inv_eq = 1.0 / (v_eq or 0.045)
-                inv_gsec = 1.0 / (v_gsec or 0.015)
-                inv_gold = 1.0 / (v_gold or 0.030)
-                inv_cash = 1.0 / (v_cash or 0.005)
+                inv_eq = base_eq / (v_eq or 0.045)
+                inv_gsec = base_gsec / (v_gsec or 0.015)
+                inv_gold = base_gold / (v_gold or 0.030)
+                inv_cash = base_cash / (v_cash or 0.005)
 
                 tot_inv = inv_eq + inv_gsec + inv_gold + inv_cash
                 w_eq = round(inv_eq / tot_inv, 4)
@@ -287,27 +307,32 @@ class QuantitativeBacktester:
 
             else:  # ACTIVIST_EVENT
                 qual_stocks = []
+                stock_volume_matrix = hist_data.get("stock_volume_matrix", {})
                 for stock_item in INDIAN_STOCK_UNIVERSE:
                     sym = stock_item["symbol"]
                     if sym not in stock_price_matrix:
                         continue
                     s_rets = stock_return_matrix[sym]
-                    
-                    pe = stock_item.get("pe_ratio", 20.0)
-                    pb = stock_item.get("pb_ratio", 3.0)
-                    roe = stock_item.get("roe_pct", 15.0)
-                    
-                    # Point-in-time real fundamental scoring metrics
-                    fcf_yield = round(max(1.5, 100.0 / (pe or 20.0)), 1)
-                    de_ratio = round(max(0.1, min(1.5, pb / 3.0)), 2)
-                    profit_growth = round(max(5.0, min(35.0, roe * 1.2)), 1)
-                    
-                    val_score = int(np.clip(100 - (pe * 1.5) + (fcf_yield * 4.0), 20, 95))
-                    qual_score = int(np.clip((roe * 2.2) + (profit_growth * 1.2) - (de_ratio * 15), 25, 98))
-                    upside = round(max(10.0, min(45.0, (val_score + qual_score) / 4.0)), 1)
+                    prices = stock_price_matrix[sym][:i+1]
+                    vols = stock_volume_matrix.get(sym, [])[:i+1]
 
-                    if val_score >= min_val_score and qual_score >= min_qual_score and upside >= min_upside_pct:
-                        qual_stocks.append((sym, stock_item, s_rets[i]))
+                    if len(prices) >= 12:
+                        entry_px = prices[-1]
+                        peak_12m = max(prices[-12:])
+                        low_52w = min(prices[-12:])
+                        discount_pct = ((peak_12m - entry_px) / (peak_12m or 1.0)) * 100.0
+                        low_prox_pct = ((entry_px - low_52w) / (low_52w or 1.0)) * 100.0
+
+                        val_score = int(np.clip(50.0 + (discount_pct * 1.2), 20, 95))
+                        qual_score = int(np.clip(50.0 + (low_prox_pct * 0.8), 25, 95))
+                        upside = round(max(10.0, min(45.0, (val_score + qual_score) / 4.0)), 1)
+                        
+                        curr_vol = vols[-1] if vols else 500000
+                        avg_vol = np.mean(vols[-6:]) if len(vols) >= 6 else 500000
+                        has_catalyst = (curr_vol / (avg_vol or 1.0) >= 2.5) or (discount_pct >= 25.0)
+
+                        if val_score >= min_val_score and qual_score >= min_qual_score and upside >= min_upside_pct and has_catalyst:
+                            qual_stocks.append((sym, stock_item, s_rets[i]))
 
                 if not qual_stocks:
                     qual_stocks = [(INDIAN_STOCK_UNIVERSE[0]["symbol"], INDIAN_STOCK_UNIVERSE[0], stock_return_matrix[INDIAN_STOCK_UNIVERSE[0]["symbol"]][i])]

@@ -400,7 +400,7 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
         {/* AQR Card */}
         <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-4 space-y-3 font-mono text-xs">
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
-            <span className="font-bold text-[#00C896] uppercase">AQR Momentum</span>
+            <span className="font-bold text-[#00C896] uppercase">AQR-inspired Momentum</span>
             <span className="text-[10px] text-[#8994A3]">{fundAlloc.aqr_alloc_pct}% Alloc</span>
           </div>
           <p className="text-[#8994A3] text-[11px] font-sans">
@@ -419,36 +419,36 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
           </button>
         </div>
 
-        {/* Bridgewater Card */}
+        {/* All Weather Card */}
         <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-4 space-y-3 font-mono text-xs">
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
-            <span className="font-bold text-[#D9A441] uppercase">Bridgewater All Weather</span>
+            <span className="font-bold text-[#3B82F6] uppercase">Bridgewater-inspired All Weather</span>
             <span className="text-[10px] text-[#8994A3]">{fundAlloc.all_weather_alloc_pct}% Alloc</span>
           </div>
           <p className="text-[#8994A3] text-[11px] font-sans">
-            Macro-balanced risk parity across Equities, G-Secs, Gold, and Cash.
+            Risk-parity macro asset allocation across Indian economic regimes.
           </p>
           <div className="flex justify-between items-center text-xs">
             <span className="text-[#8994A3]">Estimated P&L:</span>
-            <strong className={`font-mono-num ${awPnlFormatted.colorClass}`}>{awPnlFormatted.text}</strong>
+            <strong className={`font-mono-num ${allWeatherPnlFormatted.colorClass}`}>{allWeatherPnlFormatted.text}</strong>
           </div>
           <button
             onClick={() => setActiveTab('all-weather')}
             className="w-full bg-[#111823] hover:bg-[#151D28] border border-[#27303B] text-[#E8EDF3] font-bold py-1.5 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
           >
             <span>Open All Weather Workstation</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#D9A441]" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#3B82F6]" />
           </button>
         </div>
 
-        {/* Elliott Card */}
+        {/* Activist Card */}
         <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-4 space-y-3 font-mono text-xs">
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
-            <span className="font-bold text-[#7185FF] uppercase">Elliott Activist</span>
+            <span className="font-bold text-[#F59E0B] uppercase">Elliott-inspired Activist</span>
             <span className="text-[10px] text-[#8994A3]">{fundAlloc.activist_alloc_pct}% Alloc</span>
           </div>
           <p className="text-[#8994A3] text-[11px] font-sans">
-            Deep value, governance catalysts, and corporate restructuring triggers.
+            Point-in-time relative price screening & volume surge event identification.
           </p>
           <div className="flex justify-between items-center text-xs">
             <span className="text-[#8994A3]">Estimated P&L:</span>
@@ -459,7 +459,7 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
             className="w-full bg-[#111823] hover:bg-[#151D28] border border-[#27303B] text-[#E8EDF3] font-bold py-1.5 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
           >
             <span>Open Activist Workstation</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#7185FF]" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#F59E0B]" />
           </button>
         </div>
       </div>
