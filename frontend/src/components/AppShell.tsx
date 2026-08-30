@@ -140,8 +140,11 @@ export const AppShell: React.FC<Props> = ({
                 <React.Fragment key={item.id}>
                   {index > 0 && <span className="text-[#1F2937] px-1 select-none">|</span>}
                   <button
-                    onClick={() => setActiveTab(item.id)}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-md font-semibold tracking-wide whitespace-nowrap transition-all duration-150 ${
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      setActiveTab(item.id);
+                    }}
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-md font-semibold tracking-wide whitespace-nowrap transition-all duration-150 cursor-pointer ${
                       isActive
                         ? 'nav-item-active'
                         : 'text-[#8994A3] hover:bg-[#151D28] hover:text-[#E8EDF3]'

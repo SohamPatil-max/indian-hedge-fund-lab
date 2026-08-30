@@ -398,7 +398,13 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
       {/* SECTION 4 — STRATEGY NAVIGATION CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* AQR Card */}
-        <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-4 space-y-3 font-mono text-xs">
+        <div
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setActiveTab('aqr');
+          }}
+          className="bg-[#0D121A] border border-[#27303B] hover:border-[#00C896]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823]"
+        >
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
             <span className="font-bold text-[#00C896] uppercase">AQR-inspired Momentum</span>
             <span className="text-[10px] text-[#8994A3]">{fundAlloc.aqr_alloc_pct}% Alloc</span>
@@ -411,8 +417,12 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
             <strong className={`font-mono-num ${aqrPnlFormatted.colorClass}`}>{aqrPnlFormatted.text}</strong>
           </div>
           <button
-            onClick={() => setActiveTab('aqr')}
-            className="w-full bg-[#111823] hover:bg-[#151D28] border border-[#27303B] text-[#E8EDF3] font-bold py-1.5 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              setActiveTab('aqr');
+            }}
+            className="w-full bg-[#111823] hover:bg-[#1A2332] border border-[#27303B] hover:border-[#00C896] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors cursor-pointer"
           >
             <span>Open AQR Workstation</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#00C896]" />
@@ -420,7 +430,13 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
         </div>
 
         {/* All Weather Card */}
-        <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-4 space-y-3 font-mono text-xs">
+        <div
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setActiveTab('all-weather');
+          }}
+          className="bg-[#0D121A] border border-[#27303B] hover:border-[#3B82F6]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823]"
+        >
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
             <span className="font-bold text-[#3B82F6] uppercase">Bridgewater-inspired All Weather</span>
             <span className="text-[10px] text-[#8994A3]">{fundAlloc.all_weather_alloc_pct}% Alloc</span>
@@ -430,11 +446,15 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
           </p>
           <div className="flex justify-between items-center text-xs">
             <span className="text-[#8994A3]">Estimated P&L:</span>
-            <strong className={`font-mono-num ${allWeatherPnlFormatted.colorClass}`}>{allWeatherPnlFormatted.text}</strong>
+            <strong className={`font-mono-num ${awPnlFormatted.colorClass}`}>{awPnlFormatted.text}</strong>
           </div>
           <button
-            onClick={() => setActiveTab('all-weather')}
-            className="w-full bg-[#111823] hover:bg-[#151D28] border border-[#27303B] text-[#E8EDF3] font-bold py-1.5 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              setActiveTab('all-weather');
+            }}
+            className="w-full bg-[#111823] hover:bg-[#1A2332] border border-[#27303B] hover:border-[#3B82F6] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors cursor-pointer"
           >
             <span>Open All Weather Workstation</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#3B82F6]" />
@@ -442,7 +462,13 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
         </div>
 
         {/* Activist Card */}
-        <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-4 space-y-3 font-mono text-xs">
+        <div
+          onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            setActiveTab('activist');
+          }}
+          className="bg-[#0D121A] border border-[#27303B] hover:border-[#F59E0B]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823]"
+        >
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
             <span className="font-bold text-[#F59E0B] uppercase">Elliott-inspired Activist</span>
             <span className="text-[10px] text-[#8994A3]">{fundAlloc.activist_alloc_pct}% Alloc</span>
@@ -455,8 +481,12 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
             <strong className={`font-mono-num ${activistPnlFormatted.colorClass}`}>{activistPnlFormatted.text}</strong>
           </div>
           <button
-            onClick={() => setActiveTab('activist')}
-            className="w-full bg-[#111823] hover:bg-[#151D28] border border-[#27303B] text-[#E8EDF3] font-bold py-1.5 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+              setActiveTab('activist');
+            }}
+            className="w-full bg-[#111823] hover:bg-[#1A2332] border border-[#27303B] hover:border-[#F59E0B] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors cursor-pointer"
           >
             <span>Open Activist Workstation</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#F59E0B]" />
