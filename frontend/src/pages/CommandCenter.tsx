@@ -400,10 +400,10 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
         {/* AQR Card */}
         <div
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
             setActiveTab('aqr');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="bg-[#0D121A] border border-[#27303B] hover:border-[#00C896]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823]"
+          className="bg-[#0D121A] border border-[#27303B] hover:border-[#00C896]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823] group"
         >
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
             <span className="font-bold text-[#00C896] uppercase">AQR-inspired Momentum</span>
@@ -416,26 +416,21 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
             <span className="text-[#8994A3]">Estimated P&L:</span>
             <strong className={`font-mono-num ${aqrPnlFormatted.colorClass}`}>{aqrPnlFormatted.text}</strong>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              setActiveTab('aqr');
-            }}
-            className="w-full bg-[#111823] hover:bg-[#1A2332] border border-[#27303B] hover:border-[#00C896] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors cursor-pointer"
+          <div
+            className="w-full bg-[#111823] group-hover:bg-[#1A2332] border border-[#27303B] group-hover:border-[#00C896] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
           >
             <span>Open AQR Workstation</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#00C896]" />
-          </button>
+          </div>
         </div>
 
         {/* All Weather Card */}
         <div
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
             setActiveTab('all-weather');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="bg-[#0D121A] border border-[#27303B] hover:border-[#3B82F6]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823]"
+          className="bg-[#0D121A] border border-[#27303B] hover:border-[#3B82F6]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823] group"
         >
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
             <span className="font-bold text-[#3B82F6] uppercase">Bridgewater-inspired All Weather</span>
@@ -448,26 +443,21 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
             <span className="text-[#8994A3]">Estimated P&L:</span>
             <strong className={`font-mono-num ${awPnlFormatted.colorClass}`}>{awPnlFormatted.text}</strong>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              setActiveTab('all-weather');
-            }}
-            className="w-full bg-[#111823] hover:bg-[#1A2332] border border-[#27303B] hover:border-[#3B82F6] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors cursor-pointer"
+          <div
+            className="w-full bg-[#111823] group-hover:bg-[#1A2332] border border-[#27303B] group-hover:border-[#3B82F6] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
           >
             <span>Open All Weather Workstation</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#3B82F6]" />
-          </button>
+          </div>
         </div>
 
         {/* Activist Card */}
         <div
           onClick={() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
             setActiveTab('activist');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className="bg-[#0D121A] border border-[#27303B] hover:border-[#F59E0B]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823]"
+          className="bg-[#0D121A] border border-[#27303B] hover:border-[#F59E0B]/60 rounded-lg p-4 space-y-3 font-mono text-xs cursor-pointer transition-all hover:bg-[#111823] group"
         >
           <div className="flex justify-between items-center border-b border-[#27303B] pb-2">
             <span className="font-bold text-[#F59E0B] uppercase">Elliott-inspired Activist</span>
@@ -480,17 +470,12 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
             <span className="text-[#8994A3]">Estimated P&L:</span>
             <strong className={`font-mono-num ${activistPnlFormatted.colorClass}`}>{activistPnlFormatted.text}</strong>
           </div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              setActiveTab('activist');
-            }}
-            className="w-full bg-[#111823] hover:bg-[#1A2332] border border-[#27303B] hover:border-[#F59E0B] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors cursor-pointer"
+          <div
+            className="w-full bg-[#111823] group-hover:bg-[#1A2332] border border-[#27303B] group-hover:border-[#F59E0B] text-[#E8EDF3] font-bold py-2 rounded flex items-center justify-center gap-1.5 text-xs transition-colors"
           >
             <span>Open Activist Workstation</span>
             <ArrowRight className="w-3.5 h-3.5 text-[#F59E0B]" />
-          </button>
+          </div>
         </div>
       </div>
     </div>
