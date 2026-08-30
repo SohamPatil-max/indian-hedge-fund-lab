@@ -16,7 +16,7 @@ interface Props {
 }
 
 export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
-  const { activeBacktest: result } = useBacktest();
+  const { params, activeBacktest: result } = useBacktest();
 
   const [timeRange, setTimeRange] = useState<'1M' | '3M' | '6M' | 'YTD' | '1Y' | '3Y' | 'MAX'>('MAX');
   const [isNetView, setIsNetView] = useState(true);
@@ -74,14 +74,19 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
       nifty_value_cr: niftyValueCr,
     };
   });
-  const dailyPnlCr = fundAlloc.daily_pnl_cr ?? 240.0;
+
+  const totalAumCr = params?.total_aum_cr || fundAlloc.total_aum_cr || 100000.0;
+  const aumScale = totalAumCr / (fundAlloc.total_aum_cr || 100000.0);
+
+  const combinedNetPnlCr = Math.round((fundAlloc.total_fund_pnl_cr * aumScale) * 100) / 100;
+  const totalPortfolioValueCr = totalAumCr + combinedNetPnlCr;
+  const dailyPnlCr = Math.round(((fundAlloc.daily_pnl_cr ?? 240.0) * aumScale) * 100) / 100;
   const ytdReturnPct = result?.performance.ytd_return_pct ?? fundAlloc.ytd_return_pct ?? 15.12;
 
-  const totalAumCr = fundAlloc.total_aum_cr;
-  const combinedNetPnlCr = fundAlloc.total_fund_pnl_cr;
-  const totalPortfolioValueCr = totalAumCr + combinedNetPnlCr;
-
-  const cashRepoPnlCr = Math.round((combinedNetPnlCr - (fundAlloc.aqr_pnl_cr + fundAlloc.all_weather_pnl_cr + fundAlloc.activist_pnl_cr)) * 100) / 100;
+  const aqrPnlCr = Math.round((fundAlloc.aqr_pnl_cr * aumScale) * 100) / 100;
+  const awPnlCr = Math.round((fundAlloc.all_weather_pnl_cr * aumScale) * 100) / 100;
+  const activistPnlCr = Math.round((fundAlloc.activist_pnl_cr * aumScale) * 100) / 100;
+  const cashRepoPnlCr = Math.round((combinedNetPnlCr - (aqrPnlCr + awPnlCr + activistPnlCr)) * 100) / 100;
 
   function formatPnl(val: number) {
     const isPos = val >= 0;
@@ -92,10 +97,10 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
     };
   }
 
-  const aqrPnlFormatted = formatPnl(fundAlloc.aqr_pnl_cr);
-  const awPnlFormatted = formatPnl(fundAlloc.all_weather_pnl_cr);
-  const activistPnlFormatted = formatPnl(fundAlloc.activist_pnl_cr);
-  const cashPnlFormatted = formatPnl(fundAlloc.cash_pnl_cr ?? cashRepoPnlCr);
+  const aqrPnlFormatted = formatPnl(aqrPnlCr);
+  const awPnlFormatted = formatPnl(awPnlCr);
+  const activistPnlFormatted = formatPnl(activistPnlCr);
+  const cashPnlFormatted = formatPnl(cashRepoPnlCr);
 
   return (
     <div className="space-y-6 font-sans">

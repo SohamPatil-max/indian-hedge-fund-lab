@@ -3,6 +3,7 @@ import { FeeBreakdown } from '../types';
 import { DollarSign, ShieldAlert, Award, TrendingUp, Info } from 'lucide-react';
 
 interface Props {
+  totalAumCr?: number;
   fees?: FeeBreakdown;
   grossReturnPct?: number;
   netReturnPct?: number;
@@ -11,25 +12,33 @@ interface Props {
 }
 
 export const FeeDashboard: React.FC<Props> = ({
+  totalAumCr = 100000.0,
   fees,
-  grossReturnPct = 0.0,
-  netReturnPct = 0.0,
+  grossReturnPct = 30.25,
+  netReturnPct = 25.12,
   isNetView,
   setIsNetView,
 }) => {
   const defaultFees: FeeBreakdown = {
     management_fee_pct: 2.0,
     performance_fee_pct: 20.0,
-    annual_mgmt_fee_est: 2400000.0,
-    monthly_mgmt_fee_est: 200000.0,
-    cumulative_mgmt_fees_inr: 1040000.0,
-    cumulative_perf_fees_inr: 3040000.0,
-    total_fees_paid_inr: 4080000.0,
-    high_water_mark_inr: 12000000.0,
+    annual_mgmt_fee_est: (totalAumCr * 0.02) * 10000000.0,
+    monthly_mgmt_fee_est: (totalAumCr * 0.02 / 12.0) * 10000000.0,
+    cumulative_mgmt_fees_inr: (totalAumCr * 0.02 * 2.5) * 10000000.0,
+    cumulative_perf_fees_inr: (totalAumCr * (netReturnPct / 100.0) * 0.20) * 10000000.0,
+    total_fees_paid_inr: (totalAumCr * (0.02 * 2.5 + (netReturnPct / 100.0) * 0.20)) * 10000000.0,
+    high_water_mark_inr: (totalAumCr * (1.0 + netReturnPct / 100.0)) * 10000000.0,
   };
 
   const feeData = fees || defaultFees;
-  const isHwmBreached = feeData.cumulative_perf_fees_inr > 0;
+
+  const annualMgmtCr = totalAumCr * 0.02;
+  const monthlyMgmtCr = annualMgmtCr / 12.0;
+  const cumMgmtCr = (feeData.cumulative_mgmt_fees_inr / 10000000.0) * (totalAumCr / 100000.0);
+  const cumPerfCr = (feeData.cumulative_perf_fees_inr / 10000000.0) * (totalAumCr / 100000.0);
+  const totalFeesCr = cumMgmtCr + cumPerfCr;
+  const hwmCr = (feeData.high_water_mark_inr / 10000000.0) * (totalAumCr / 100000.0);
+  const isHwmBreached = cumPerfCr > 0;
 
   return (
     <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-5 text-[#E8EDF3] font-mono text-xs shadow-md space-y-4">
@@ -43,11 +52,11 @@ export const FeeDashboard: React.FC<Props> = ({
             <h3 className="text-sm font-bold text-[#E8EDF3] tracking-wide flex items-center gap-2">
               <span>HEDGE FUND FEE STRUCTURE — 2/20 MODEL</span>
               <span className="bg-[#111823] border border-[#27303B] text-[#00C896] text-[10px] px-2 py-0.5 rounded font-bold">
-                HIGH-WATER MARK ENFORCED
+                ₹{totalAumCr.toLocaleString('en-IN')} Cr BASE
               </span>
             </h3>
             <p className="text-[11px] text-[#8994A3] font-sans">
-              2.0% Annual Management Fee on AUM + 20.0% Performance Fee on Net New Profits
+              2.0% Annual Management Fee on AUM + 20.0% Performance Fee on Net New Profits (HWM Enforced)
             </p>
           </div>
         </div>
@@ -79,10 +88,10 @@ export const FeeDashboard: React.FC<Props> = ({
         <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
           <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">MANAGEMENT FEE (2% P.A.)</span>
           <div className="text-[#E8EDF3] font-bold text-lg font-mono-num mt-1">
-            ₹{feeData.monthly_mgmt_fee_est.toLocaleString('en-IN')} <span className="text-xs text-[#5F6B79] font-normal">/ mo</span>
+            ₹{monthlyMgmtCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr <span className="text-xs text-[#5F6B79] font-normal">/ mo</span>
           </div>
           <span className="text-[11px] text-[#5F6B79] block mt-1">
-            Annual: ₹{feeData.annual_mgmt_fee_est.toLocaleString('en-IN')}
+            Annual: ₹{annualMgmtCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
           </span>
         </div>
 
@@ -93,7 +102,7 @@ export const FeeDashboard: React.FC<Props> = ({
             20.0% <span className="text-xs text-[#8994A3] font-normal">above HWM</span>
           </div>
           <span className="text-[11px] text-[#5F6B79] block mt-1">
-            Cum Perf Fees: ₹{(feeData.cumulative_perf_fees_inr / 10000000).toFixed(2)} Cr
+            Cum Perf Fees: ₹{cumPerfCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
           </span>
         </div>
 
@@ -101,7 +110,7 @@ export const FeeDashboard: React.FC<Props> = ({
         <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
           <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">HIGH-WATER MARK (HWM)</span>
           <div className="text-[#D9A441] font-bold text-lg font-mono-num mt-1">
-            ₹{(feeData.high_water_mark_inr / 10000000).toFixed(2)} Cr
+            ₹{hwmCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
           </div>
           <span className="text-[11px] text-[#5F6B79] block mt-1">
             {isHwmBreached ? 'HWM Breached — Fee Eligible' : 'Below Peak — 0 Fee Charged'}
@@ -112,7 +121,7 @@ export const FeeDashboard: React.FC<Props> = ({
         <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
           <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">TOTAL FEES CHARGED</span>
           <div className="text-[#FF5C6C] font-bold text-lg font-mono-num mt-1">
-            ₹{(feeData.total_fees_paid_inr / 10000000).toFixed(2)} Cr
+            ₹{totalFeesCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
           </div>
           <span className="text-[11px] text-[#5F6B79] block mt-1">
             Impact: {(grossReturnPct - netReturnPct).toFixed(2)}% Return Difference

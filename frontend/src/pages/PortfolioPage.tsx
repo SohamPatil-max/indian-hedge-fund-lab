@@ -8,7 +8,7 @@ import { Briefcase, Layers } from 'lucide-react';
 import { ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
 export const PortfolioPage: React.FC = () => {
-  const { activeBacktest } = useBacktest();
+  const { params, activeBacktest } = useBacktest();
   const [fund, setFund] = useState<SimulatedFundState | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNetView, setIsNetView] = useState(true);
@@ -39,7 +39,7 @@ export const PortfolioPage: React.FC = () => {
     );
   }
 
-  const fundAlloc = fund.fund_allocation || {
+  const rawAlloc = fund.fund_allocation || {
     total_aum_cr: 100000.0,
     aqr_alloc_pct: 40.0,
     all_weather_alloc_pct: 35.0,
@@ -57,9 +57,28 @@ export const PortfolioPage: React.FC = () => {
     fund_nav: 154.78
   };
 
-  const totalAumCr = fundAlloc.total_aum_cr;
-  const combinedNetPnlCr = fundAlloc.total_fund_pnl_cr;
+  function roundTwo(val: number) {
+    return Math.round(val * 100) / 100;
+  }
+
+  const totalAumCr = params?.total_aum_cr || rawAlloc.total_aum_cr || 100000.0;
+  const aumScale = totalAumCr / (rawAlloc.total_aum_cr || 100000.0);
+
+  const combinedNetPnlCr = roundTwo(rawAlloc.total_fund_pnl_cr * aumScale);
   const totalPortfolioValueCr = totalAumCr + combinedNetPnlCr;
+
+  const fundAlloc = {
+    ...rawAlloc,
+    total_aum_cr: totalAumCr,
+    aqr_capital_cr: roundTwo(totalAumCr * (rawAlloc.aqr_alloc_pct / 100.0)),
+    all_weather_capital_cr: roundTwo(totalAumCr * (rawAlloc.all_weather_alloc_pct / 100.0)),
+    activist_capital_cr: roundTwo(totalAumCr * (rawAlloc.activist_alloc_pct / 100.0)),
+    unallocated_cash_cr: roundTwo(totalAumCr * (rawAlloc.unallocated_cash_pct / 100.0)),
+    aqr_pnl_cr: roundTwo(rawAlloc.aqr_pnl_cr * aumScale),
+    all_weather_pnl_cr: roundTwo(rawAlloc.all_weather_pnl_cr * aumScale),
+    activist_pnl_cr: roundTwo(rawAlloc.activist_pnl_cr * aumScale),
+    total_fund_pnl_cr: combinedNetPnlCr,
+  };
 
   // Development Desync Check
   if (Math.abs((totalAumCr + combinedNetPnlCr) - totalPortfolioValueCr) > 0.01) {
@@ -69,10 +88,6 @@ export const PortfolioPage: React.FC = () => {
   }
 
   const cashRepoPnlCr = roundTwo(combinedNetPnlCr - (fundAlloc.aqr_pnl_cr + fundAlloc.all_weather_pnl_cr + fundAlloc.activist_pnl_cr));
-
-  function roundTwo(val: number) {
-    return Math.round(val * 100) / 100;
-  }
 
   const sectorChartData = Object.entries(fund.sector_exposure).map(([sector, pct]) => ({
     name: sector,
@@ -237,6 +252,7 @@ export const PortfolioPage: React.FC = () => {
 
       {/* Dedicated 2/20 Fee Dashboard Section */}
       <FeeDashboard
+        totalAumCr={totalAumCr}
         fees={fund.fees}
         grossReturnPct={fund.gross_total_return_pct}
         netReturnPct={fund.net_total_return_pct}
