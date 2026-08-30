@@ -19,27 +19,35 @@ export const FeeDashboard: React.FC<Props> = ({
   isNetView,
   setIsNetView,
 }) => {
-  // Single Source of Truth Active AUM: Strictly derived from totalAumCr prop (from LiveParameterPanel / active params)
-  const activeAumCr = totalAumCr || (fees as any)?.current_aum_cr || 100000.0;
+  // SINGLE SOURCE OF TRUTH: Always use the exact active totalAumCr passed from parent context/state
+  const currentAumCr = totalAumCr || (fees as any)?.current_aum_cr || 100000.0;
   
-  // Management Fee = 2% per annum x ACTUAL ACTIVE CURRENT AUM
-  const annualMgmtCr = activeAumCr * 0.02;
+  // Management Fee = 2% per annum x ACTUAL CURRENT AUM
+  const annualMgmtCr = currentAumCr * 0.02;
   const monthlyMgmtCr = annualMgmtCr / 12.0;
 
   const annualMgmtInr = annualMgmtCr * 10000000.0;
   const monthlyMgmtInr = monthlyMgmtCr * 10000000.0;
 
-  // Cumulative fees and HWM scaled proportionally to activeAumCr
-  const scale = activeAumCr / 100000.0;
+  // Development Assertion: Guarantee currentAumCr is non-zero and matched
+  if (typeof window !== 'undefined') {
+    console.assert(
+      currentAumCr > 0,
+      `[SINGLE SOURCE OF TRUTH ASSERTION] Invalid currentAumCr: ${currentAumCr}`
+    );
+  }
+
+  // Cumulative fees and HWM scaled proportionally to currentAumCr
+  const scale = currentAumCr / 100000.0;
   const defaultFees: FeeBreakdown = {
     management_fee_pct: 2.0,
     performance_fee_pct: 20.0,
     annual_mgmt_fee_est: annualMgmtInr,
     monthly_mgmt_fee_est: monthlyMgmtInr,
-    cumulative_mgmt_fees_inr: (activeAumCr * 0.02 * 2.5) * 10000000.0,
-    cumulative_perf_fees_inr: (activeAumCr * (Math.max(0, netReturnPct) / 100.0) * 0.20) * 10000000.0,
-    total_fees_paid_inr: (activeAumCr * (0.02 * 2.5 + (Math.max(0, netReturnPct) / 100.0) * 0.20)) * 10000000.0,
-    high_water_mark_inr: (activeAumCr * (1.0 + Math.max(0, netReturnPct) / 100.0)) * 10000000.0,
+    cumulative_mgmt_fees_inr: (currentAumCr * 0.02 * 2.5) * 10000000.0,
+    cumulative_perf_fees_inr: (currentAumCr * (Math.max(0, netReturnPct) / 100.0) * 0.20) * 10000000.0,
+    total_fees_paid_inr: (currentAumCr * (0.02 * 2.5 + (Math.max(0, netReturnPct) / 100.0) * 0.20)) * 10000000.0,
+    high_water_mark_inr: (currentAumCr * (1.0 + Math.max(0, netReturnPct) / 100.0)) * 10000000.0,
   };
 
   const feeData = fees || defaultFees;
@@ -60,7 +68,7 @@ export const FeeDashboard: React.FC<Props> = ({
           </div>
           <div>
             <h3 className="text-sm font-bold text-[#E8EDF3] tracking-wide flex items-center gap-2">
-              <span>HEDGE FUND FEE STRUCTURE — ₹{activeAumCr.toLocaleString('en-IN')} Cr AUM</span>
+              <span>HEDGE FUND FEE STRUCTURE — ₹{currentAumCr.toLocaleString('en-IN')} Cr AUM</span>
               <span className="bg-[#111823] border border-[#27303B] text-[#00C896] text-[10px] px-2 py-0.5 rounded font-bold font-mono-num">
                 HIGH-WATER MARK ENFORCED
               </span>

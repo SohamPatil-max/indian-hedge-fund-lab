@@ -64,6 +64,13 @@ export const PortfolioPage: React.FC = () => {
   const totalAumCr = params?.total_aum_cr || rawAlloc.total_aum_cr || 100000.0;
   const aumScale = totalAumCr / (rawAlloc.total_aum_cr || 100000.0);
 
+  if (typeof window !== 'undefined') {
+    console.assert(
+      typeof totalAumCr === 'number' && totalAumCr > 0,
+      `[PORTFOLIO PAGE SINGLE SOURCE ASSERTION] Invalid totalAumCr: ${totalAumCr}`
+    );
+  }
+
   const combinedNetPnlCr = roundTwo(rawAlloc.total_fund_pnl_cr * aumScale);
   const totalPortfolioValueCr = totalAumCr + combinedNetPnlCr;
 

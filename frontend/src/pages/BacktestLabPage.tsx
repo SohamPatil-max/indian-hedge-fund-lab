@@ -199,34 +199,39 @@ export const BacktestLabPage: React.FC = () => {
                     <thead className="bg-[#080B10] border-b border-[#27303B] text-[#8994A3] uppercase text-[10px] sticky top-0">
                       <tr>
                         <th className="p-2.5">MONTH</th>
+                        <th className="p-2.5 text-right">BEGINNING AUM</th>
                         <th className="p-2.5 text-right">GROSS AUM</th>
                         <th className="p-2.5 text-right">MONTHLY MGMT FEE (2%/12)</th>
                         <th className="p-2.5 text-right">ANNUALIZED MGMT FEE</th>
                         <th className="p-2.5 text-right">PERF FEE (20% HWM)</th>
-                        <th className="p-2.5 text-right">NET INVESTOR AUM</th>
+                        <th className="p-2.5 text-right">ENDING NET AUM</th>
                         <th className="p-2.5 text-right">HIGH-WATER MARK</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#27303B] font-mono-num text-[11px]">
                       {result.equity_curve.map((step, idx) => {
-                        const grossCr = (step.gross_portfolio_value / 10000000.0);
-                        const netCr = (step.net_investor_value / 10000000.0);
+                        const begCr = idx === 0 
+                          ? (totalAumCr) 
+                          : ((result.equity_curve[idx - 1].net_investor_value / 10000000.0) * (totalAumCr / (result.parameters.total_aum_cr || 100000.0)));
+                        const grossCr = (step.gross_portfolio_value / 10000000.0) * (totalAumCr / (result.parameters.total_aum_cr || 100000.0));
+                        const netCr = (step.net_investor_value / 10000000.0) * (totalAumCr / (result.parameters.total_aum_cr || 100000.0));
                         const mgmtFeeInr = step.monthly_mgmt_fee_inr ?? (step.gross_portfolio_value * 0.02 / 12.0);
-                        const mgmtFeeCr = mgmtFeeInr / 10000000.0;
+                        const mgmtFeeCr = (mgmtFeeInr / 10000000.0) * (totalAumCr / (result.parameters.total_aum_cr || 100000.0));
                         const annualMgmtCr = mgmtFeeCr * 12.0;
                         const perfFeeInr = step.monthly_perf_fee_inr ?? 0.0;
-                        const perfFeeCr = perfFeeInr / 10000000.0;
-                        const hwmCr = (step.high_water_mark / 10000000.0);
+                        const perfFeeCr = (perfFeeInr / 10000000.0) * (totalAumCr / (result.parameters.total_aum_cr || 100000.0));
+                        const hwmCr = (step.high_water_mark / 10000000.0) * (totalAumCr / (result.parameters.total_aum_cr || 100000.0));
 
                         return (
                           <tr key={idx} className="hover:bg-[#111823]">
                             <td className="p-2 text-[#E8EDF3] font-bold">{step.date}</td>
-                            <td className="p-2 text-right text-[#8994A3]">₹{grossCr.toFixed(2)} Cr</td>
-                            <td className="p-2 text-right font-bold text-[#FF5C6C]">₹{mgmtFeeCr.toFixed(2)} Cr</td>
-                            <td className="p-2 text-right text-[#5F6B79]">₹{annualMgmtCr.toFixed(2)} Cr/yr</td>
-                            <td className="p-2 text-right text-[#D9A441]">{perfFeeCr > 0 ? `₹${perfFeeCr.toFixed(2)} Cr` : '₹0.00 Cr'}</td>
-                            <td className="p-2 text-right font-bold text-[#00C896]">₹{netCr.toFixed(2)} Cr</td>
-                            <td className="p-2 text-right text-[#8994A3]">₹{hwmCr.toFixed(2)} Cr</td>
+                            <td className="p-2 text-right text-[#8994A3]">₹{begCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr</td>
+                            <td className="p-2 text-right text-[#E8EDF3]">₹{grossCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr</td>
+                            <td className="p-2 text-right font-bold text-[#FF5C6C]">₹{mgmtFeeCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr</td>
+                            <td className="p-2 text-right text-[#5F6B79]">₹{annualMgmtCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr/yr</td>
+                            <td className="p-2 text-right text-[#D9A441]">{perfFeeCr > 0 ? `₹${perfFeeCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr` : '₹0.00 Cr'}</td>
+                            <td className="p-2 text-right font-bold text-[#00C896]">₹{netCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr</td>
+                            <td className="p-2 text-right text-[#8994A3]">₹{hwmCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr</td>
                           </tr>
                         );
                       })}

@@ -75,8 +75,15 @@ export const CommandCenter: React.FC<Props> = ({ setActiveTab }) => {
     };
   });
 
-  const totalAumCr = params?.total_aum_cr || fundAlloc.total_aum_cr || 100000.0;
+  const totalAumCr = params?.total_aum_cr || result?.parameters?.total_aum_cr || fundAlloc.total_aum_cr || 100000.0;
   const aumScale = totalAumCr / (fundAlloc.total_aum_cr || 100000.0);
+
+  if (typeof window !== 'undefined') {
+    console.assert(
+      typeof totalAumCr === 'number' && totalAumCr > 0,
+      `[COMMAND CENTER SINGLE SOURCE ASSERTION] Invalid totalAumCr: ${totalAumCr}`
+    );
+  }
 
   const combinedNetPnlCr = Math.round((fundAlloc.total_fund_pnl_cr * aumScale) * 100) / 100;
   const totalPortfolioValueCr = totalAumCr + combinedNetPnlCr;
