@@ -634,17 +634,111 @@ class QuantitativeBacktester:
         strategy_pnl_inr = round(gross_val - strategy_capital_inr, 2)
 
         # 5. FUND TOTAL CAPITAL & STRATEGY ALLOCATION P&L AGGREGATION
-        # Calculate Strategy P&L strictly scaled to allocated capital
-        aqr_return = (equity_curve[-1]["net_investor_value"] / strategy_capital_inr - 1.0) if strategy_key == "AQR_MOMENTUM" else (0.182 * years)
-        aw_return = (equity_curve[-1]["net_investor_value"] / strategy_capital_inr - 1.0) if strategy_key == "ALL_WEATHER" else (0.115 * years)
-        activist_return = (equity_curve[-1]["net_investor_value"] / strategy_capital_inr - 1.0) if strategy_key == "ACTIVIST_EVENT" else (0.210 * years)
+        # Compute exact step-by-step returns for all 3 strategies concurrently
+        aqr_ret_hist = []
+        aw_ret_hist = []
+        activist_ret_hist = []
+        stock_volume_matrix = hist_data.get("stock_volume_matrix", {})
 
-        aqr_pnl_inr = aqr_capital_inr * aqr_return
-        aw_pnl_inr = all_weather_capital_inr * aw_return
-        activist_pnl_inr = activist_capital_inr * activist_return
+        for step_i in range(n_steps):
+            # AQR step return
+            mom_scores = []
+            for stock_item in INDIAN_STOCK_UNIVERSE:
+                sym = stock_item["symbol"]
+                if sym in stock_price_matrix:
+                    p_T1 = stock_price_matrix[sym][max(0, step_i - exclusion_months)]
+                    p_T12 = stock_price_matrix[sym][max(0, step_i - momentum_lookback_months)]
+                    sc = round(((p_T1 / (p_T12 or 1.0)) - 1.0) * 100.0, 2)
+                    mom_scores.append((sym, stock_item, sc, stock_return_matrix[sym][step_i]))
+            mom_scores.sort(key=lambda x: x[2], reverse=True)
+            top_cut = max(1, int(math.ceil(len(mom_scores) * (top_percentile / 100.0))))
+            sel_aqr = mom_scores[:top_cut]
+            
+            vw_list = []
+            for x in sel_aqr:
+                s_s = x[0]
+                h_rets = stock_return_matrix[s_s][max(0, step_i - 12):step_i] if step_i > 0 else [0.05]
+                s_v = float(np.std(h_rets)) if len(h_rets) > 1 else 0.06
+                vw_list.append(1.0 / (s_v or 0.06))
+            s_vw = sum(vw_list) or 1.0
+            w_aqr = [v / s_vw for v in vw_list]
+            r_aqr = sum(sel_aqr[k][3] * w_aqr[k] for k in range(len(sel_aqr)))
+            aqr_ret_hist.append(r_aqr)
+
+            # All Weather step return
+            w_l = min(6, step_i)
+            e6 = sum(nifty_returns[max(0, step_i - w_l):step_i]) if step_i > 0 else 0.04
+            g6 = sum(gsec_returns[max(0, step_i - w_l):step_i]) if step_i > 0 else 0.03
+            go6 = sum(gold_returns[max(0, step_i - w_l):step_i]) if step_i > 0 else 0.02
+            c6 = sum(cash_returns[max(0, step_i - w_l):step_i]) if step_i > 0 else 0.015
+
+            b_e, b_g, b_go, b_c = (0.45, 0.30, 0.15, 0.10) if (e6 >= g6 and go6 < c6) else \
+                                  (0.25, 0.15, 0.45, 0.15) if (e6 >= g6 and go6 >= c6) else \
+                                  (0.15, 0.55, 0.15, 0.15) if (e6 < g6 and go6 < c6) else \
+                                  (0.15, 0.15, 0.45, 0.25)
+            
+            h_eq = nifty_returns[max(0, step_i - 12):step_i] if step_i > 0 else [0.03]
+            h_gsec = gsec_returns[max(0, step_i - 12):step_i] if step_i > 0 else [0.01]
+            h_gold = gold_returns[max(0, step_i - 12):step_i] if step_i > 0 else [0.02]
+            h_cash = cash_returns[max(0, step_i - 12):step_i] if step_i > 0 else [0.005]
+
+            ve = float(np.std(h_eq)) if len(h_eq) > 1 else 0.045
+            vg = float(np.std(h_gsec)) if len(h_gsec) > 1 else 0.015
+            vgo = float(np.std(h_gold)) if len(h_gold) > 1 else 0.030
+            vc = float(np.std(h_cash)) if len(h_cash) > 1 else 0.005
+
+            ie, ig, igo, ic = b_e/(ve or 0.045), b_g/(vg or 0.015), b_go/(vgo or 0.030), b_c/(vc or 0.005)
+            tot_i = ie + ig + igo + ic
+            we, wg, wgo, wc = ie/tot_i, ig/tot_i, igo/tot_i, ic/tot_i
+            r_aw = (we * nifty_returns[step_i]) + (wg * gsec_returns[step_i]) + (wgo * gold_returns[step_i]) + (wc * cash_returns[step_i])
+            aw_ret_hist.append(r_aw)
+
+            # Activist step return
+            q_stk = []
+            for stock_item in INDIAN_STOCK_UNIVERSE:
+                sym = stock_item["symbol"]
+                if sym in stock_price_matrix:
+                    pxs = stock_price_matrix[sym][:step_i+1]
+                    vls = stock_volume_matrix.get(sym, [])[:step_i+1]
+                    if len(pxs) >= 12:
+                        ep = pxs[-1]
+                        p12 = max(pxs[-12:])
+                        l52 = min(pxs[-12:])
+                        disc = ((p12 - ep) / (p12 or 1.0)) * 100.0
+                        prox = ((ep - l52) / (l52 or 1.0)) * 100.0
+                        vs = int(np.clip(50.0 + (disc * 1.2), 20, 95))
+                        qs = int(np.clip(50.0 + (prox * 0.8), 25, 95))
+                        up = round(max(10.0, min(45.0, (vs + qs) / 4.0)), 1)
+                        cv = vls[-1] if vls else 500000
+                        av = np.mean(vls[-6:]) if len(vls) >= 6 else 500000
+                        hc = (cv / (av or 1.0) >= 2.5) or (disc >= 25.0)
+                        if vs >= min_val_score and qs >= min_qual_score and up >= min_upside_pct and hc:
+                            q_stk.append(stock_return_matrix[sym][step_i])
+            r_act = (sum(q_stk) / len(q_stk)) if q_stk else stock_return_matrix[INDIAN_STOCK_UNIVERSE[0]["symbol"]][step_i]
+            activist_ret_hist.append(r_act)
+
+        # Compound capital for each strategy
+        c_aqr = aqr_capital_inr
+        c_aw = all_weather_capital_inr
+        c_act = activist_capital_inr
+
+        fric_eq = 0.25 * (transaction_cost_pct + slippage_pct) / 100.0
+        fric_aw = 0.08 * (transaction_cost_pct + slippage_pct) / 100.0
+
+        for step_i in range(n_steps):
+            f_eq = fric_eq if step_i % 3 == 0 else 0.0
+            f_aw = fric_aw if step_i % 1 == 0 else 0.0
+            
+            c_aqr *= (1.0 + aqr_ret_hist[step_i] - f_eq)
+            c_aw *= (1.0 + aw_ret_hist[step_i] - f_aw)
+            c_act *= (1.0 + activist_ret_hist[step_i] - f_eq)
+
+        aqr_pnl_inr = round(c_aqr - aqr_capital_inr, 2)
+        aw_pnl_inr = round(c_aw - all_weather_capital_inr, 2)
+        activist_pnl_inr = round(c_act - activist_capital_inr, 2)
         
         # Cash yield (6.5% RBI Repo rate)
-        cash_pnl_inr = unallocated_cash_inr * (0.065 * years)
+        cash_pnl_inr = round(unallocated_cash_inr * (0.065 * years), 2)
         
         total_fund_pnl_inr = aqr_pnl_inr + aw_pnl_inr + activist_pnl_inr + cash_pnl_inr
 
