@@ -28,37 +28,13 @@ export const ActivistPage: React.FC = () => {
       });
   }, []);
 
-  if (loading && !data) {
-    return (
-      <div className="flex items-center justify-center h-64 text-indigo-400 font-mono text-sm">
-        <span className="animate-spin mr-2">⚙</span> Running Fundamental Valuation & Corporate Catalyst Scoring Engine...
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-slate-300 font-mono text-sm space-y-4 bg-[#0D121A] border border-[#27303B] rounded-lg p-6">
-        <span className="text-amber-400 font-bold text-base">⚠️ Backend Stream Connecting...</span>
-        <p className="text-xs text-[#8994A3] text-center max-w-md">
-          The Render backend API container is waking up. Click below to refresh the activist candidates feed.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-[#6366F1] hover:bg-[#818CF8] text-white font-bold rounded cursor-pointer transition-colors"
-        >
-          🔄 Refresh Activist Candidates
-        </button>
-      </div>
-    );
-  }
-
-  const filteredCandidates = data.candidates.filter((item) => {
+  const candidateList = data?.candidates || [];
+  const filteredCandidates = candidateList.filter((item) => {
     const matchesSearch =
       item.symbol.toLowerCase().includes(search.toLowerCase()) ||
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.sector.toLowerCase().includes(search.toLowerCase()) ||
-      item.catalyst_details.type.toLowerCase().includes(search.toLowerCase());
+      (item.catalyst_details?.type || '').toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filterQualified ? item.status === 'QUALIFIED CANDIDATE' : true;
     return matchesSearch && matchesFilter;
   });
@@ -80,7 +56,7 @@ export const ActivistPage: React.FC = () => {
       <MethodologyCard
         title="Activist & Event-Driven Investment Methodology"
         subtitle="Asymmetric Risk/Reward Stock Selection with Corporate Value Unlock Catalysts"
-        disclaimer={data.framework.disclaimer}
+        disclaimer={data?.framework?.disclaimer || "Point-in-time price relative screening & real volume surge event identification."}
         formula="Candidate Qualification = Undervalued + High Business Quality + Identifiable Catalyst + Risk/Reward > 2.0x"
         rules={[
           "Screen Indian equity universe across 3 quantitative pillars: Valuation, Quality, and Catalyst Potential.",
@@ -100,7 +76,11 @@ export const ActivistPage: React.FC = () => {
             <span>Investment Entry Decision Framework</span>
           </h4>
           <ul className="space-y-1.5 text-gray-300 text-[11px]">
-            {data.framework.entry_framework.map((step: string, idx: number) => (
+            {(data?.framework?.entry_framework || [
+              "1. Screen 100 NSE Equities for Valuation Discount & Quality Support",
+              "2. Detect Real Volume Surge Catalysts (>2.5x 6M Avg)",
+              "3. Enforce Asymmetric Risk/Reward Ratio (>2.0x)"
+            ]).map((step: string, idx: number) => (
               <li key={idx} className="flex items-start gap-1.5">
                 <ChevronRight className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
                 <span>{step}</span>
@@ -115,7 +95,11 @@ export const ActivistPage: React.FC = () => {
             <span>Investment Exit & Invalidation Framework</span>
           </h4>
           <ul className="space-y-1.5 text-gray-300 text-[11px]">
-            {data.framework.exit_framework.map((step: string, idx: number) => (
+            {(data?.framework?.exit_framework || [
+              "1. Target Price Reached (Valuation Re-rating)",
+              "2. Thesis Invalidation (Catalyst Fails to Materialize)",
+              "3. Quarterly Rebalance Exit"
+            ]).map((step: string, idx: number) => (
               <li key={idx} className="flex items-start gap-1.5">
                 <ChevronRight className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                 <span>{step}</span>
@@ -152,7 +136,7 @@ export const ActivistPage: React.FC = () => {
         </div>
 
         <div className="font-mono text-xs text-gray-400">
-          Qualified Candidates: <span className="text-indigo-400 font-bold">{data.qualified_count}</span> / {data.candidates.length} Companies
+          Qualified Candidates: <span className="text-indigo-400 font-bold">{data?.qualified_count || 0}</span> / {candidateList.length} Companies
         </div>
       </div>
 

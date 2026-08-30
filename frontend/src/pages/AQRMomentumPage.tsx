@@ -43,32 +43,8 @@ export const AQRMomentumPage: React.FC = () => {
       });
   }, [params]);
 
-  if (loading && !data) {
-    return (
-      <div className="flex items-center justify-center h-64 text-emerald-400 font-mono text-sm">
-        <span className="animate-spin mr-2">⚙</span> Recalculating AQR-Inspired Momentum Ranks (Lookback: {params.momentum_lookback_months}M, Excl: {params.exclusion_months}M, Top: {params.top_percentile}%)...
-      </div>
-    );
-  }
-
-  if (!data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-slate-300 font-mono text-sm space-y-4 bg-[#0D121A] border border-[#27303B] rounded-lg p-6">
-        <span className="text-amber-400 font-bold text-base">⚠️ Backend Stream Connecting...</span>
-        <p className="text-xs text-[#8994A3] text-center max-w-md">
-          The Render backend API container is waking up. Click below to refresh the momentum data feed.
-        </p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-[#00C896] hover:bg-[#00E6AB] text-[#080B10] font-bold rounded cursor-pointer transition-colors"
-        >
-          🔄 Refresh AQR Momentum Ranks
-        </button>
-      </div>
-    );
-  }
-
-  const filteredPortfolio = data.portfolio.filter((item) => {
+  const portfolioList = data?.portfolio || [];
+  const filteredPortfolio = portfolioList.filter((item) => {
     const matchesSearch =
       item.symbol.toLowerCase().includes(search.toLowerCase()) ||
       item.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -210,7 +186,7 @@ export const AQRMomentumPage: React.FC = () => {
               `Calculate 12-month trailing total return for every eligible constituent in the 100 NSE stock universe.`,
               `Exclude most recent 1 month (T-1) to eliminate short-term reversal noise and market microstructure friction.`,
               "Rank all eligible stocks in descending order from highest to lowest 12-1m momentum score (Highest = Rank #1).",
-              `Select top 33% (one-third) highest-ranking liquid Indian equities (~${data.selected_count} stocks).`,
+              `Select top 33% (one-third) highest-ranking liquid Indian equities (~${data?.selected_count || 33} stocks).`,
               `Weight selected stocks according to market capitalization: Weight_i = Cap_i / Sum(Cap_selected).`,
               `Reconstitute and rebalance portfolio quarterly (March, June, September, December).`
             ]}
@@ -247,7 +223,7 @@ export const AQRMomentumPage: React.FC = () => {
             </div>
 
             <div className="text-slate-400 text-xs">
-              Showing <strong className="text-white">{filteredPortfolio.length}</strong> of <strong className="text-white">{data.universe_count}</strong> NSE stocks
+              Showing <strong className="text-white">{filteredPortfolio.length}</strong> of <strong className="text-white">{data?.universe_count || 100}</strong> NSE stocks
             </div>
           </div>
 
@@ -336,7 +312,7 @@ export const AQRMomentumPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1E293B]">
-                {data.portfolio.filter((i) => i.selected).map((item) => (
+                {portfolioList.filter((i) => i.selected).map((item) => (
                   <tr key={item.symbol} className="hover:bg-[#182232]/50">
                     <td className="p-3 font-bold text-white">{item.symbol.replace('.NS', '')}</td>
                     <td className="p-3 text-slate-300">{item.sector}</td>

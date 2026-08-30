@@ -37,11 +37,41 @@ def get_or_run_active_backtest() -> Dict[str, Any]:
     return active_backtest_result
 
 import threading
+# Strategy Endpoint Fast Caching
+cached_aqr_data: Dict[str, Any] = {}
+cached_aw_data: Dict[str, Any] = {}
+cached_activist_data: Dict[str, Any] = {}
+
+def prewarm_all_strategy_caches():
+    global cached_aqr_data, cached_aw_data, cached_activist_data
+    try:
+        overview = aqr_strategy.get_strategy_overview()
+        portfolio = aqr_strategy.calculate_ranks_and_weights()
+        cached_aqr_data = {
+            "overview": overview,
+            "selected_count": sum(1 for s in portfolio if s["selected"]),
+            "universe_count": len(portfolio),
+            "portfolio": portfolio
+        }
+        cached_aw_data = all_weather_strategy.get_portfolio_allocation()
+        
+        framework = activist_strategy.get_strategy_framework()
+        candidates = activist_strategy.evaluate_candidates()
+        cached_activist_data = {
+            "framework": framework,
+            "qualified_count": sum(1 for c in candidates if c["status"] == "QUALIFIED CANDIDATE"),
+            "candidates": candidates
+        }
+    except Exception as e:
+        logging.error(f"Strategy cache prewarming error: {e}")
 
 @app.on_event("startup")
 def startup_event():
-    # Run backtest pre-warming in background thread so Uvicorn binds to $PORT instantly (<0.1s)
-    threading.Thread(target=get_or_run_active_backtest, daemon=True).start()
+    # Run backtest pre-warming and strategy endpoint caching in background thread
+    def prewarm():
+        get_or_run_active_backtest()
+        prewarm_all_strategy_caches()
+    threading.Thread(target=prewarm, daemon=True).start()
 
 @app.get("/")
 def read_root():
@@ -106,6 +136,9 @@ def get_aqr_momentum_data(
     percentile: float = 33.0,
     max_pos: float = 8.0
 ):
+    if cached_aqr_data and lookback == 12 and exclusion == 1 and percentile == 33.0 and max_pos == 8.0:
+        return cached_aqr_data
+
     overview = aqr_strategy.get_strategy_overview()
     portfolio = aqr_strategy.calculate_ranks_and_weights(
         momentum_lookback_months=lookback,
@@ -114,12 +147,16 @@ def get_aqr_momentum_data(
         max_position_size_pct=max_pos
     )
     selected_count = sum(1 for s in portfolio if s["selected"])
-    return {
+    res = {
         "overview": overview,
         "selected_count": selected_count,
         "universe_count": len(portfolio),
         "portfolio": portfolio
     }
+    if lookback == 12 and exclusion == 1 and percentile == 33.0 and max_pos == 8.0:
+        global cached_aqr_data
+        cached_aqr_data = res
+    return res
 
 @app.get("/api/strategy/all-weather")
 def get_all_weather_data(
@@ -128,12 +165,19 @@ def get_all_weather_data(
     target_risk: float = 7.5,
     max_pos: float = 60.0
 ):
-    return all_weather_strategy.get_portfolio_allocation(
+    if cached_aw_data and growth_lookback == 6 and inflation_lookback == 6 and target_risk == 7.5 and max_pos == 60.0:
+        return cached_aw_data
+
+    res = all_weather_strategy.get_portfolio_allocation(
         growth_lookback_months=growth_lookback,
         inflation_lookback_months=inflation_lookback,
         target_risk_pct=target_risk,
         max_position_size_pct=max_pos
     )
+    if growth_lookback == 6 and inflation_lookback == 6 and target_risk == 7.5 and max_pos == 60.0:
+        global cached_aw_data
+        cached_aw_data = res
+    return res
 
 @app.get("/api/strategy/activist")
 def get_activist_data(
@@ -142,6 +186,9 @@ def get_activist_data(
     min_upside: float = 15.0,
     max_pos: float = 10.0
 ):
+    if cached_activist_data and min_val == 55.0 and min_qual == 55.0 and min_upside == 15.0 and max_pos == 10.0:
+        return cached_activist_data
+
     framework = activist_strategy.get_strategy_framework()
     candidates = activist_strategy.evaluate_candidates(
         min_val_score=min_val,
@@ -150,11 +197,15 @@ def get_activist_data(
         max_position_size_pct=max_pos
     )
     qualified_count = sum(1 for c in candidates if c["status"] == "QUALIFIED CANDIDATE")
-    return {
+    res = {
         "framework": framework,
         "qualified_count": qualified_count,
         "candidates": candidates
     }
+    if min_val == 55.0 and min_qual == 55.0 and min_upside == 15.0 and max_pos == 10.0:
+        global cached_activist_data
+        cached_activist_data = res
+    return res
 
 # ---------------- SINGLE SOURCE OF TRUTH BACKTEST ENDPOINTS ----------------
 @app.get("/api/backtest/active_state")
