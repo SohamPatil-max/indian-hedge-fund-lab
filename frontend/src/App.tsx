@@ -98,7 +98,7 @@ function MainApp() {
           />
         )}
         {(activeTab === 'strategies' || activeTab === 'aqr' || activeTab === 'all-weather' || activeTab === 'activist' || activeTab === 'compare') && (
-          <StrategyLibraryPage setActiveTab={setActiveTab} initialSubTab={activeTab === 'strategies' ? 'overview' : (activeTab as any)} />
+          <StrategyLibraryPage key={activeTab} setActiveTab={setActiveTab} initialSubTab={activeTab === 'strategies' ? 'overview' : (activeTab as any)} />
         )}
         {activeTab === 'backtest' && <BacktestLabPage />}
         {activeTab === 'portfolio' && <PortfolioPage />}
