@@ -6,8 +6,10 @@ import { Sliders, Play, TrendingUp, ShieldAlert, DollarSign, Activity, FileSprea
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, AreaChart, Area } from 'recharts';
 
 export const BacktestLabPage: React.FC = () => {
-  const { activeBacktest: result, running } = useBacktest();
+  const { params, activeBacktest: result, running } = useBacktest();
   const [isNetView, setIsNetView] = useState(true);
+
+  const totalAumCr = params?.total_aum_cr || result?.parameters?.total_aum_cr || 100000.0;
 
   if (running && !result) {
     return (
@@ -41,6 +43,7 @@ export const BacktestLabPage: React.FC = () => {
         <>
           {/* Dedicated 2/20 Fee Dashboard */}
           <FeeDashboard
+            totalAumCr={totalAumCr}
             fees={result.fee_breakdown}
             grossReturnPct={result.performance.gross_total_return_pct}
             netReturnPct={result.performance.net_total_return_pct}

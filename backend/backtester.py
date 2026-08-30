@@ -723,7 +723,8 @@ class QuantitativeBacktester:
                         hc = (cv / (av or 1.0) >= 2.5) or (disc >= 25.0)
                         if vs >= min_val_score and qs >= min_qual_score and up >= min_upside_pct and hc:
                             q_stk.append(stock_return_matrix[sym][step_i])
-            r_act = (sum(q_stk) / len(q_stk)) if q_stk else stock_return_matrix[INDIAN_STOCK_UNIVERSE[0]["symbol"]][step_i]
+            fallback_sym = list(stock_return_matrix.keys())[0] if stock_return_matrix else ""
+            r_act = (sum(q_stk) / len(q_stk)) if q_stk else (stock_return_matrix[fallback_sym][step_i] if fallback_sym in stock_return_matrix else 0.002)
             activist_ret_hist.append(r_act)
 
         # Compound capital for each strategy
