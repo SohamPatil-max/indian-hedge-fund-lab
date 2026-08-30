@@ -36,9 +36,12 @@ def get_or_run_active_backtest() -> Dict[str, Any]:
         simulated_fund.update_from_backtest(active_backtest_result)
     return active_backtest_result
 
+import threading
+
 @app.on_event("startup")
 def startup_event():
-    get_or_run_active_backtest()
+    # Run backtest pre-warming in background thread so Uvicorn binds to $PORT instantly (<0.1s)
+    threading.Thread(target=get_or_run_active_backtest, daemon=True).start()
 
 @app.get("/")
 def read_root():
