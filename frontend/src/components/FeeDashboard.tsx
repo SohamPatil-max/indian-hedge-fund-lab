@@ -19,25 +19,33 @@ export const FeeDashboard: React.FC<Props> = ({
   isNetView,
   setIsNetView,
 }) => {
+  // Current AUM dynamically determined from backend fees payload or totalAumCr prop
+  const currentAumCr = (fees as any)?.current_aum_cr || totalAumCr;
+  
   const defaultFees: FeeBreakdown = {
     management_fee_pct: 2.0,
     performance_fee_pct: 20.0,
-    annual_mgmt_fee_est: (totalAumCr * 0.02) * 10000000.0,
-    monthly_mgmt_fee_est: (totalAumCr * 0.02 / 12.0) * 10000000.0,
-    cumulative_mgmt_fees_inr: (totalAumCr * 0.02 * 2.5) * 10000000.0,
-    cumulative_perf_fees_inr: (totalAumCr * (netReturnPct / 100.0) * 0.20) * 10000000.0,
-    total_fees_paid_inr: (totalAumCr * (0.02 * 2.5 + (netReturnPct / 100.0) * 0.20)) * 10000000.0,
-    high_water_mark_inr: (totalAumCr * (1.0 + netReturnPct / 100.0)) * 10000000.0,
+    annual_mgmt_fee_est: (currentAumCr * 0.02) * 10000000.0,
+    monthly_mgmt_fee_est: (currentAumCr * 0.02 / 12.0) * 10000000.0,
+    cumulative_mgmt_fees_inr: (currentAumCr * 0.02 * 2.5) * 10000000.0,
+    cumulative_perf_fees_inr: (currentAumCr * (Math.max(0, netReturnPct) / 100.0) * 0.20) * 10000000.0,
+    total_fees_paid_inr: (currentAumCr * (0.02 * 2.5 + (Math.max(0, netReturnPct) / 100.0) * 0.20)) * 10000000.0,
+    high_water_mark_inr: (currentAumCr * (1.0 + Math.max(0, netReturnPct) / 100.0)) * 10000000.0,
   };
 
   const feeData = fees || defaultFees;
 
-  const annualMgmtCr = totalAumCr * 0.02;
-  const monthlyMgmtCr = annualMgmtCr / 12.0;
-  const cumMgmtCr = (feeData.cumulative_mgmt_fees_inr / 10000000.0) * (totalAumCr / 100000.0);
-  const cumPerfCr = (feeData.cumulative_perf_fees_inr / 10000000.0) * (totalAumCr / 100000.0);
-  const totalFeesCr = cumMgmtCr + cumPerfCr;
-  const hwmCr = (feeData.high_water_mark_inr / 10000000.0) * (totalAumCr / 100000.0);
+  // Management Fee = 2% per annum x ACTUAL CURRENT AUM
+  const annualMgmtInr = feeData.annual_mgmt_fee_est || (currentAumCr * 0.02 * 10000000.0);
+  const monthlyMgmtInr = feeData.monthly_mgmt_fee_est || (annualMgmtInr / 12.0);
+
+  const annualMgmtCr = annualMgmtInr / 10000000.0;
+  const monthlyMgmtCr = monthlyMgmtInr / 10000000.0;
+
+  const cumMgmtCr = feeData.cumulative_mgmt_fees_inr / 10000000.0;
+  const cumPerfCr = feeData.cumulative_perf_fees_inr / 10000000.0;
+  const totalFeesCr = feeData.total_fees_paid_inr / 10000000.0;
+  const hwmCr = feeData.high_water_mark_inr / 10000000.0;
   const isHwmBreached = cumPerfCr > 0;
 
   return (
@@ -51,12 +59,12 @@ export const FeeDashboard: React.FC<Props> = ({
           <div>
             <h3 className="text-sm font-bold text-[#E8EDF3] tracking-wide flex items-center gap-2">
               <span>HEDGE FUND FEE STRUCTURE — 2/20 MODEL</span>
-              <span className="bg-[#111823] border border-[#27303B] text-[#00C896] text-[10px] px-2 py-0.5 rounded font-bold">
-                ₹{totalAumCr.toLocaleString('en-IN')} Cr BASE
+              <span className="bg-[#111823] border border-[#27303B] text-[#00C896] text-[10px] px-2 py-0.5 rounded font-bold font-mono-num">
+                CURRENT AUM: ₹{currentAumCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
               </span>
             </h3>
             <p className="text-[11px] text-[#8994A3] font-sans">
-              2.0% Annual Management Fee on AUM + 20.0% Performance Fee on Net New Profits (HWM Enforced)
+              2.0% Annual Management Fee on Actual Current AUM (Deducted Monthly) + 20.0% Performance Fee on Net Profits (HWM Enforced)
             </p>
           </div>
         </div>
@@ -86,12 +94,12 @@ export const FeeDashboard: React.FC<Props> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {/* Management Fee Card */}
         <div className="bg-[#080B10] p-4 rounded-lg border border-[#27303B]">
-          <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">MANAGEMENT FEE (2% P.A.)</span>
+          <span className="text-[#8994A3] text-[10px] block font-semibold uppercase tracking-wider">MANAGEMENT FEE (2% P.A. ON CURRENT AUM)</span>
           <div className="text-[#E8EDF3] font-bold text-lg font-mono-num mt-1">
             ₹{monthlyMgmtCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr <span className="text-xs text-[#5F6B79] font-normal">/ mo</span>
           </div>
-          <span className="text-[11px] text-[#5F6B79] block mt-1">
-            Annual: ₹{annualMgmtCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
+          <span className="text-[11px] text-[#5F6B79] block mt-1 font-mono-num">
+            Annualized: ₹{annualMgmtCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
           </span>
         </div>
 
@@ -101,7 +109,7 @@ export const FeeDashboard: React.FC<Props> = ({
           <div className="text-[#00C896] font-bold text-lg font-mono-num mt-1">
             20.0% <span className="text-xs text-[#8994A3] font-normal">above HWM</span>
           </div>
-          <span className="text-[11px] text-[#5F6B79] block mt-1">
+          <span className="text-[11px] text-[#5F6B79] block mt-1 font-mono-num">
             Cum Perf Fees: ₹{cumPerfCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
           </span>
         </div>
@@ -123,7 +131,7 @@ export const FeeDashboard: React.FC<Props> = ({
           <div className="text-[#FF5C6C] font-bold text-lg font-mono-num mt-1">
             ₹{totalFeesCr.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Cr
           </div>
-          <span className="text-[11px] text-[#5F6B79] block mt-1">
+          <span className="text-[11px] text-[#5F6B79] block mt-1 font-mono-num">
             Impact: {(grossReturnPct - netReturnPct).toFixed(2)}% Return Difference
           </span>
         </div>

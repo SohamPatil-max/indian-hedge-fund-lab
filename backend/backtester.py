@@ -581,21 +581,25 @@ class QuantitativeBacktester:
                             "performance_fee_inr": 0.0
                         })
 
-            # Update Gross Value
+            # Update Gross Value by applying step strategy returns
             gross_val *= (1.0 + strat_step_ret - friction_pct)
 
-            # 2/20 FEE CALCULATIONS WITH HIGH-WATER MARK PROTECTION
+            # 2/20 FEE CALCULATIONS WITH HIGH-WATER MARK PROTECTION (AUM-BASED, NOT FIXED)
+            # 1. Management Fee = 2% per annum x ACTUAL UPDATED GROSS AUM
             monthly_mgmt_fee = gross_val * (mgmt_fee_pct / 100.0 / 12.0)
             cum_mgmt_fees += monthly_mgmt_fee
+            
+            val_after_mgmt = max(1.0, gross_val - monthly_mgmt_fee)
 
+            # 2. Performance Fee = 20% on Net Profits above High-Water Mark
             monthly_perf_fee = 0.0
-            if gross_val > high_water_mark:
-                eligible_profit = gross_val - high_water_mark
+            if val_after_mgmt > high_water_mark:
+                eligible_profit = val_after_mgmt - high_water_mark
                 monthly_perf_fee = eligible_profit * (perf_fee_pct / 100.0)
                 cum_perf_fees += monthly_perf_fee
-                high_water_mark = gross_val - monthly_perf_fee
+                high_water_mark = val_after_mgmt
 
-            net_val = max(1.0, gross_val - monthly_mgmt_fee - monthly_perf_fee)
+            net_val = max(1.0, val_after_mgmt - monthly_perf_fee)
             gross_val = net_val
 
             # Peak-to-Trough Maximum Drawdown from Net Investor NAV Trajectory
@@ -610,6 +614,11 @@ class QuantitativeBacktester:
                 "date": dt_point.strftime("%Y-%m-%d"),
                 "gross_portfolio_value": round(gross_val, 2),
                 "net_investor_value": round(net_val, 2),
+                "monthly_mgmt_fee_inr": round(monthly_mgmt_fee, 2),
+                "monthly_perf_fee_inr": round(monthly_perf_fee, 2),
+                "monthly_mgmt_fee_cr": round(monthly_mgmt_fee / CRORE_TO_INR, 4),
+                "annual_mgmt_fee_cr": round((monthly_mgmt_fee * 12.0) / CRORE_TO_INR, 4),
+                "current_aum_cr": round(net_val / CRORE_TO_INR, 2),
                 "high_water_mark": round(high_water_mark, 2),
                 "benchmark_nifty": round(bm_series[i], 2),
                 "drawdown_pct": round(dd, 2),
@@ -866,6 +875,8 @@ class QuantitativeBacktester:
             "fee_breakdown": {
                 "management_fee_pct": mgmt_fee_pct,
                 "performance_fee_pct": perf_fee_pct,
+                "current_aum_inr": round(net_val, 2),
+                "current_aum_cr": round(net_val / CRORE_TO_INR, 2),
                 "annual_mgmt_fee_est": round(net_val * (mgmt_fee_pct / 100.0), 2),
                 "monthly_mgmt_fee_est": round(net_val * (mgmt_fee_pct / 100.0 / 12.0), 2),
                 "cumulative_mgmt_fees_inr": round(cum_mgmt_fees, 2),

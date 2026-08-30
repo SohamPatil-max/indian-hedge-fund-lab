@@ -181,6 +181,57 @@ export const BacktestLabPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Monthly Backtest Fee Deduction Ledger */}
+              <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-5">
+                <div className="flex items-center justify-between border-b border-[#27303B] pb-3 mb-4 font-mono text-xs">
+                  <h3 className="text-xs font-bold text-[#E8EDF3] uppercase tracking-wider flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-[#00C896]" />
+                    <span>MONTHLY BACKTEST FEE DEDUCTION LEDGER (AUM-BASED)</span>
+                  </h3>
+                  <span className="text-[#8994A3] text-[10px]">2.0% p.a. Monthly Pro-Rata Deducted from Current AUM</span>
+                </div>
+
+                <div className="overflow-x-auto max-h-64 overflow-y-auto">
+                  <table className="w-full text-left font-mono text-xs">
+                    <thead className="bg-[#080B10] border-b border-[#27303B] text-[#8994A3] uppercase text-[10px] sticky top-0">
+                      <tr>
+                        <th className="p-2.5">MONTH</th>
+                        <th className="p-2.5 text-right">GROSS AUM</th>
+                        <th className="p-2.5 text-right">MONTHLY MGMT FEE (2%/12)</th>
+                        <th className="p-2.5 text-right">ANNUALIZED MGMT FEE</th>
+                        <th className="p-2.5 text-right">PERF FEE (20% HWM)</th>
+                        <th className="p-2.5 text-right">NET INVESTOR AUM</th>
+                        <th className="p-2.5 text-right">HIGH-WATER MARK</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#27303B] font-mono-num text-[11px]">
+                      {result.equity_curve.map((step, idx) => {
+                        const grossCr = (step.gross_portfolio_value / 10000000.0);
+                        const netCr = (step.net_investor_value / 10000000.0);
+                        const mgmtFeeInr = step.monthly_mgmt_fee_inr ?? (step.gross_portfolio_value * 0.02 / 12.0);
+                        const mgmtFeeCr = mgmtFeeInr / 10000000.0;
+                        const annualMgmtCr = mgmtFeeCr * 12.0;
+                        const perfFeeInr = step.monthly_perf_fee_inr ?? 0.0;
+                        const perfFeeCr = perfFeeInr / 10000000.0;
+                        const hwmCr = (step.high_water_mark / 10000000.0);
+
+                        return (
+                          <tr key={idx} className="hover:bg-[#111823]">
+                            <td className="p-2 text-[#E8EDF3] font-bold">{step.date}</td>
+                            <td className="p-2 text-right text-[#8994A3]">₹{grossCr.toFixed(2)} Cr</td>
+                            <td className="p-2 text-right font-bold text-[#FF5C6C]">₹{mgmtFeeCr.toFixed(2)} Cr</td>
+                            <td className="p-2 text-right text-[#5F6B79]">₹{annualMgmtCr.toFixed(2)} Cr/yr</td>
+                            <td className="p-2 text-right text-[#D9A441]">{perfFeeCr > 0 ? `₹${perfFeeCr.toFixed(2)} Cr` : '₹0.00 Cr'}</td>
+                            <td className="p-2 text-right font-bold text-[#00C896]">₹{netCr.toFixed(2)} Cr</td>
+                            <td className="p-2 text-right text-[#8994A3]">₹{hwmCr.toFixed(2)} Cr</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               {/* Trade Statistics Summary */}
               <div className="bg-[#0D121A] border border-[#27303B] rounded-lg p-4">
                 <h3 className="text-xs font-bold text-[#8994A3] uppercase tracking-wider mb-3">

@@ -183,6 +183,59 @@ class TradeExporterEngine:
 
         self._auto_fit_columns(ws2)
 
+        # ---------------- WORKSHEET 3: MONTHLY BACKTEST LEDGER ----------------
+        ws3 = wb.create_sheet(title="Monthly Backtest Ledger")
+        equity_curve = backtest_data.get("equity_curve", [])
+        
+        ledger_headers = [
+            "Date", "Gross AUM (₹)", "Current AUM (₹ Cr)", "Monthly Mgmt Fee (₹)", 
+            "Monthly Mgmt Fee (₹ Cr)", "Annual Mgmt Fee (₹ Cr)", "Monthly Perf Fee (₹)", 
+            "Net Investor Value (₹)", "High-Water Mark (₹)", "Cumulative Mgmt Fees (₹)", "Cumulative Total Fees (₹)"
+        ]
+        
+        ws3.append(ledger_headers)
+        for col_num, h_text in enumerate(ledger_headers, 1):
+            cell = ws3.cell(row=1, column=col_num)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+        ws3.freeze_panes = "A2"
+
+        for r_idx, pt in enumerate(equity_curve, 2):
+            gross_val = pt.get("gross_portfolio_value", 0.0)
+            net_val = pt.get("net_investor_value", 0.0)
+            mgmt_fee = pt.get("monthly_mgmt_fee_inr", round(gross_val * (0.02 / 12.0), 2))
+            perf_fee = pt.get("monthly_perf_fee_inr", 0.0)
+            hwm = pt.get("high_water_mark", 0.0)
+            cum_mgmt = pt.get("cumulative_mgmt_fees", 0.0)
+            cum_tot = pt.get("cumulative_total_fees", 0.0)
+
+            row_data = [
+                pt.get("date", ""),
+                gross_val,
+                round(net_val / 10000000.0, 2),
+                mgmt_fee,
+                round(mgmt_fee / 10000000.0, 4),
+                round((mgmt_fee * 12.0) / 10000000.0, 4),
+                perf_fee,
+                net_val,
+                hwm,
+                cum_mgmt,
+                cum_tot
+            ]
+            ws3.append(row_data)
+            for c_idx, val in enumerate(row_data, 1):
+                cell = ws3.cell(row=r_idx, column=c_idx)
+                cell.font = regular_font
+                cell.border = thin_border
+                if c_idx in [2, 4, 7, 8, 9, 10, 11]:
+                    cell.number_format = '₹#,##0.00'
+                elif c_idx in [3, 5, 6]:
+                    cell.number_format = '0.00'
+
+        self._auto_fit_columns(ws3)
+
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)

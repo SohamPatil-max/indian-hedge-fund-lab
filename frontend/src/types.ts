@@ -170,6 +170,8 @@ export interface TradeRecord {
 export interface FeeBreakdown {
   management_fee_pct: number;
   performance_fee_pct: number;
+  current_aum_inr?: number;
+  current_aum_cr?: number;
   annual_mgmt_fee_est: number;
   monthly_mgmt_fee_est: number;
   cumulative_mgmt_fees_inr: number;
@@ -266,6 +268,11 @@ export interface BacktestResult {
     date: string;
     gross_portfolio_value: number;
     net_investor_value: number;
+    monthly_mgmt_fee_inr?: number;
+    monthly_perf_fee_inr?: number;
+    monthly_mgmt_fee_cr?: number;
+    annual_mgmt_fee_cr?: number;
+    current_aum_cr?: number;
     high_water_mark: number;
     benchmark_nifty: number;
     drawdown_pct: number;
